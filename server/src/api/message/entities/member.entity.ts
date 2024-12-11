@@ -1,0 +1,46 @@
+import { UserEntity } from "@/api/user/entities/user.entity";
+import { Uuid } from "@/common/types/common.type";
+import { MemberRole } from "@/constants/entity.enum";
+import { AbstractEntity } from "@/database/entities/abstract.entity";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { ChatRoomEntity } from "./chat-room.entity";
+import { MessageEntity } from "./message.entity";
+
+@Entity('member')
+export class MemberEntity extends AbstractEntity{
+  constructor(data?: Partial<MemberEntity>) {
+    super();
+    Object.assign(this, data);
+  }
+
+  @PrimaryGeneratedColumn('uuid', { primaryKeyConstraintName: 'PK_member_id' })
+  id!: Uuid;
+
+  @Column({type:'enum', enum:MemberRole})
+  role!: MemberRole 
+
+  @Column({name: 'user_id'})
+  userId!: Uuid
+
+  @Column({name: 'room_id'})
+  roomId!: Uuid
+
+  @OneToMany(()=>MessageEntity,(message)=>message.sender)
+  messages: MessageEntity[]
+
+  @ManyToOne(()=>UserEntity)
+  @JoinColumn({
+    name:'user_id',
+    referencedColumnName:'id',
+    foreignKeyConstraintName:'FK_member_user'
+  })
+  user!: UserEntity
+
+  @ManyToOne(()=>ChatRoomEntity)
+  @JoinColumn({
+    name:'room_id',
+    referencedColumnName:'id',
+    foreignKeyConstraintName:'FK_member_chatroom'
+  })
+  room!: ChatRoomEntity
+}

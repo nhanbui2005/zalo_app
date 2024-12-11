@@ -1,0 +1,2 @@
+==> làm phần gửi thông báo khi gửi yêu cầu kết bạn và khi chấp nhận yêu cầu
+==> làm gửi tiếp tin nhắn

@@ -1,0 +1,8 @@
+{
+  "validation": {
+    "error": "Common validation"
+  },
+  "error":{
+    "many_request":"Too many request"
+  }
+}

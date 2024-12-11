@@ -1,0 +1,14 @@
+{
+  "unique": {
+    "username": "Realtion already exists",
+    "email": "User already exists"
+  },
+  "validation": {
+    "is_empty": "Field is required"
+  },
+  "error": {
+    "exists": "Relation already exists",
+    "not_exists": "Relation already not exists",
+    "login_fail":"Account or password is wrong"
+  }
+}
