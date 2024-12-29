@@ -13,7 +13,7 @@ AxiosInstant.interceptors.request.use(function (config) {
   if (config.data instanceof FormData) {
     config.headers['Content-Type'] = 'multipart/form-data';
   }
-  const token = localStorage.getItem(AppConstant.LOCAL_STORAGE_TOKEN_KEY);
+  const token = localStorage.getItem(AppConstant.LOCAL_STORAGE_ACCESS_TOKEN_KEY);
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
@@ -31,7 +31,7 @@ AxiosInstant.interceptors.response.use(function (response) {
 }, function (error) {
   // Any status codes that falls outside the range of 2xx cause this function to trigger
   // Do something with response error
-  return Promise.reject(error);
+  return Promise.reject(error.response.data);
 });
 
 export default AxiosInstant

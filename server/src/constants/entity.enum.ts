@@ -9,16 +9,24 @@ export enum Role{
   USER = 'user'
 }
 
-export enum RelationStatus{
+
+export enum ResponseRelationStatus{
+  NOTTHING = 'notthing',
   PENDING =  'pending',
-  ACCEPTED = 'acceped',
+  FRIEND = 'friend',
   BLOCKED = 'blocked'
+}
+
+export enum Who{
+  ME = 'me',
+  PARTNER = 'partner'
 }
 
 export enum ActionRelationType{
   SENT =  'sent',
+  REVOKE = 'revoke',
   ACCEPT = 'accept',
-  REJECT = 'reject',
+  DECLINE = 'decline',
   BLOCK = 'block'
 }
 

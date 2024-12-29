@@ -13,13 +13,20 @@ const getMe = async () => {
   try {
     return await AxiosInstant.get('users/me')
   } catch (error) {
+    console.log('error ');
     
   }
 }
 
+const findUserByEmail = async (email) => {
+  return await AxiosInstant.get(`users/search?email=${email}`)
+}
+
+
 const userAPI = {
   updateMe,
-  getMe
+  getMe,
+  findUserByEmail
 }
 
 export default userAPI

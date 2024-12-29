@@ -45,6 +45,7 @@ export type I18nTranslations = {
             "exists": string;
             "not_exists": string;
             "login_fail": string;
+            "not_handle": string;
         };
     };
     "user": {

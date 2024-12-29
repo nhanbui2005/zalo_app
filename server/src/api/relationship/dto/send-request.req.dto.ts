@@ -1,8 +1,9 @@
+import { Uuid } from '@/common/types/common.type';
 import {
-  StringField,
+  UUIDField,
 } from '@/decorators/field.decorators';
 
 export class SendRequestToAddFriendReqDto {
-  @StringField()
-  receiverId: string
+  @UUIDField()
+  receiverId: Uuid
 }

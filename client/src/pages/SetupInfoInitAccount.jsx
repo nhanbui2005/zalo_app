@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux'
 import ImageUploadPreview from '../components/ImageUploadPreview'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import userAPI from '../service/userAPI'
 import { useNavigate } from 'react-router-dom'
 
@@ -13,28 +13,31 @@ export default function SetupInitAccount() {
   const [avatarPid, setAvatarPid] = useState('')
   const [dob, setDob] = useState(null)
   const [gender, setGender] = useState(null)
-  const data = useSelector((state) => state.user)
   const navigate = useNavigate()
+  const email = useSelector(state => state.me.user?.email)  
 
   const handleSubmit = async () => {
     try {
-      console.log(username, dob, gender, avatarUrl, avatarPid)
-    
-      console.log('date',data);
-      const response = await userAPI.updateMe({
+      await userAPI.updateMe({
         username,
         avatarPid,
         avatarUrl,
         dob,
         gender
       })
-      console.log(response);
       navigate('/')
       
     } catch (error) {
       console.log(error);
     }
   }
+
+  useEffect(() => {
+    if (email) {
+      navigate('/')
+    }
+  }, [email])
+  
 
   const Title = ({ text }) => {
     return (
@@ -53,6 +56,9 @@ export default function SetupInitAccount() {
         />
         <p className="mt-4 text-lg font-semibold text-gray-700">
           Chọn ảnh đại diện
+        </p>
+        <p className="mt-4 text-lg font-semibold text-gray-700">
+          {email}
         </p>
 
         {/* Họ và Tên */}

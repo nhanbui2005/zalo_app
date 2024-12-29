@@ -52,8 +52,11 @@ export class UserController {
   })
   @Roles(Role.USER, Role.SUPER_ADMIN, Role.ADMIN)
   @Get('search')
-  async searchUserByEmail(@Query() { email }): Promise<UserResDto> {
-    return await this.userService.searchUserByEmail(email);
+  async searchUserByEmail(
+    @Query() { email },
+    @CurrentUser() {id}
+  ): Promise<any> {
+    return await this.userService.searchUserByEmail(id, email);
   }
 
   @ApiAuth({

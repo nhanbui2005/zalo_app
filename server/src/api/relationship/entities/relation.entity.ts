@@ -1,6 +1,6 @@
 import { UserEntity } from "@/api/user/entities/user.entity";
 import { Uuid } from "@/common/types/common.type";
-import { RelationStatus } from "@/constants/entity.enum";
+import { RelationStatus } from "@/constants/entity-enum/relation.enum";
 import { AbstractEntity } from "@/database/entities/abstract.entity";
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 

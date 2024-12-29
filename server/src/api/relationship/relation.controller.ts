@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query } from '@nestjs/common';
 import { RelationService } from './relation.service';
 import { SendRequestToAddFriendReqDto } from './dto/send-request.req.dto';
 import { HandleRequestToAddFriendReqDto } from './dto/handle-req.req.dto';
 import { Uuid } from '@/common/types/common.type';
 import { CurrentUser } from '@/decorators/current-user.decorator';
 import { ApiTags } from '@nestjs/swagger';
+import { GetListRelationReqDto } from './dto/get-list.req.dto';
 
 @ApiTags('relations')
 @Controller({
@@ -16,10 +17,10 @@ export class RelationController {
 
   @Post('/sent-request')
   sendRequest(
-    @Body() dto: SendRequestToAddFriendReqDto,
-    @CurrentUser('id') userId: Uuid
+    @Body() {receiverId}: {receiverId: Uuid},
+    @CurrentUser('id') myId: Uuid
   ) {
-    return this.relationService.sendRequest(dto, userId);
+    return this.relationService.sendRequest(myId, receiverId);
   }
   
   @Post('/handle-request')
@@ -29,10 +30,13 @@ export class RelationController {
 
   
 
-  // @Get()
-  // findAll() {
-  //   return this.friendService.findAll();
-  // }
+  @Get()
+  findAll(
+    @CurrentUser('id') userId: Uuid,
+    @Query() {status}: GetListRelationReqDto
+  ) {
+    return this.relationService.getAllRelations(userId, status);
+  }
 
   // @Get(':id')
   // findOne(@Param('id') id: string) {

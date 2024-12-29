@@ -1,15 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { SendRequestToAddFriendReqDto } from './dto/send-request.req.dto';
-import { ActionHanleRequestRelation, HandleRequestToAddFriendReqDto } from './dto/handle-req.req.dto';
+import { HandleRequestToAddFriendReqDto } from './dto/handle-req.req.dto';
 import { RelationEntity } from './entities/relation.entity';
-import { RevokeRequestToAddFriendReqDto } from './dto/revoke-request.req.dto';
-import { GetListRelationReqDto } from './dto/get-list.req.dto';
 import { RelationResDto } from './dto/list-relation.res.dto';
 import { UserEntity } from '../user/entities/user.entity';
 import { Uuid } from '@/common/types/common.type';
-import { RelationStatus } from '@/constants/entity.enum';
+import { Who } from '@/constants/entity.enum';
 import { plainToInstance } from 'class-transformer';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { createEventKey } from '@/utils/socket.util';
@@ -18,6 +15,7 @@ import { SYSTEM_USER_ID } from '@/constants/app.constant';
 import { ValidationException } from '@/exceptions/validation.exception';
 import { ErrorCode } from '@/constants/error-code.constant';
 import { EventEmitterKey } from '@/constants/event-emitter.constant';
+import { InviterType, RelationAction, RelationStatus } from '@/constants/entity-enum/relation.enum';
 
 @Injectable()
 export class RelationService {
@@ -29,13 +27,15 @@ export class RelationService {
     private eventEmitter: EventEmitter2
   ){}
 
-  async sendRequest(dto: SendRequestToAddFriendReqDto, senderId: Uuid): Promise<RelationResDto>{
-    //validate data
-    await this.userRepository.findOneByOrFail({id: dto.receiverId as Uuid})
+  async sendRequest(senderId: Uuid, receiverId: Uuid, ): Promise<RelationResDto>{    
+    if (senderId == receiverId) {
+      throw new ValidationException()
+    }
+    await this.userRepository.findOneByOrFail({id: receiverId})
     const relationExists = await this.relationRepository.findOne({
       where:[
-        {requesterId: senderId, handlerId: dto.receiverId as Uuid},
-        {requesterId: dto.receiverId as Uuid, handlerId: senderId},
+        {requesterId: senderId, handlerId: receiverId},
+        {requesterId: receiverId, handlerId: senderId},
       ]
     })
     if (relationExists) {
@@ -45,7 +45,7 @@ export class RelationService {
     //create new relation
     const newRelation = new RelationEntity({
       requesterId: senderId,
-      handlerId: dto.receiverId as Uuid,
+      handlerId: receiverId,
       status: RelationStatus.PENDING,
       createdBy: SYSTEM_USER_ID,
       updatedBy: SYSTEM_USER_ID
@@ -56,7 +56,7 @@ export class RelationService {
     this.eventEmitter.emit(
       EventEmitterKey.SENT_REQUEST_ADD_FRIEND,
       {
-        to: createEventKey(EventKey.NOTIFY_REQUEST_ADD_FRIEND_SENT,dto.receiverId.toString()),
+        to: createEventKey(EventKey.NOTIFY_REQUEST_ADD_FRIEND_SENT, receiverId.toString()),
         payload:{
           message:'ok',
           contain:'You have a request add friend.',
@@ -69,7 +69,6 @@ export class RelationService {
   }
 
   async handleRequest(dto: HandleRequestToAddFriendReqDto): Promise<RelationResDto>{
-    
     //check relation exists
     const relation = await this.relationRepository.findOneBy({
       id: dto.relationId,
@@ -81,12 +80,13 @@ export class RelationService {
     }
 
     if (
-      dto.action === ActionHanleRequestRelation.REJECT ||
-      dto.action === ActionHanleRequestRelation.REVOKE
+      dto.action === RelationAction.DECLINE ||
+      dto.action === RelationAction.REVOKE
     ) {
-      await this.relationRepository.remove(relation)  
+      await this.relationRepository.remove(relation)
+      relation.status = RelationStatus.NOTTHING
     }else{
-      relation.status = RelationStatus.ACCEPTED
+      relation.status = RelationStatus.FRIEND
       await this.relationRepository.save(relation)
 
       //sent notify to requester
@@ -106,12 +106,54 @@ export class RelationService {
     return plainToInstance(RelationResDto, relation)
   }
 
-  async getAllRelations(dto: GetListRelationReqDto) : Promise<RelationResDto[]>{
+  async getAllRelations(currentUserId: Uuid, status: RelationStatus) : Promise<any[]>{    
+    const query = this.relationRepository
+      .createQueryBuilder('relation')
+      .leftJoinAndSelect('relation.requester', 'requester')
+      .leftJoinAndSelect('relation.handler', 'handler')
+      .where(
+        '(relation.requesterId = :currentUserId) OR (relation.handlerId = :currentUserId)',
+        { currentUserId }
+      )
+      .select([
+        'relation.id',
+        'relation.status',
+        'requester.id',
+        'requester.username',
+        'requester.email',
+        'requester.avatarUrl',
+        'requester.dob',
+        'requester.gender',
+        'handler.id',
+        'handler.username',
+        'handler.email',
+        'handler.avatarUrl',
+        'handler.dob',
+        'handler.gender',
+      ])
 
-    return null
+    if (status) {
+      query.where(
+        'relation.status = :status',
+        {status}
+      )
+    }
+
+    const relations = await query.getMany()
+
+    const result = relations.map(item => {
+      return {
+        id: item.id,
+        status: item.status,
+        createdAt: item.createdAt,
+        user: item.requester.id == currentUserId ? item.handler : item.requester,
+        inviter: item.requester.id == currentUserId ? InviterType.SELF : InviterType.OTHER,
+      }
+    })
+    
+    return result
   }
 
-  
   // async create(dto: CreateFriendDto): Promise<FriendEntity> {
   //   const {userId, partnerId, actionType} = dto
   //   let friendRealate = await FriendEntity.findOneOrFail({
@@ -203,4 +245,3 @@ export class RelationService {
   //   }
   // }
 }
-

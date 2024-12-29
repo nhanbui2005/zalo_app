@@ -9,7 +9,7 @@ const persistConfig = {
 };
 
 const rootReducer = combineReducers({
-  user: userSlice
+  me: userSlice
 });
 
 // Tạo persistedReducer

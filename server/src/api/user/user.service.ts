@@ -18,7 +18,7 @@ import { UserResDto } from './dto/user.res.dto';
 import { UserEntity } from './entities/user.entity';
 import { paginate } from '@/utils/offset-pagination';
 import { AuthProviderEntity } from './entities/auth-provider.entity';
-import { AuthProviderType } from '@/constants/entity.enum';
+import { AuthProviderType, Who } from '@/constants/entity.enum';
 import { RoleEntity } from './entities/role.entity';
 import { JobName, QueueName } from '@/constants/job.constant';
 import { IEmailJob, ISendPasswordEmailJob } from '@/common/interfaces/job.interface';
@@ -26,6 +26,8 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { UpdateCurrentUserReqDto } from './dto/update-current-user.req.dto';
 import { UpdateUserByAdminReqDto } from './dto/update-user-by-admin.req.dto';
+import { RelationEntity } from '../relationship/entities/relation.entity';
+import { InviterType, RelationStatus } from '@/constants/entity-enum/relation.enum';
 
 @Injectable()
 export class UserService {
@@ -36,6 +38,8 @@ export class UserService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(RoleEntity)
     private readonly roleRepository: Repository<RoleEntity>,
+    @InjectRepository(RelationEntity)
+    private readonly relationRepository: Repository<RelationEntity>,
     @InjectQueue(QueueName.EMAIL)
     private readonly emailQueue: Queue<IEmailJob, any, string>,
     @InjectRepository(AuthProviderEntity)
@@ -170,10 +174,55 @@ export class UserService {
     await this.userRepository.softDelete(id);
   }
 
-  async searchUserByEmail(email: string): Promise<UserResDto>{
-    assert(email, 'email is required');
-    const user = await this.userRepository.findOneByOrFail({ email });
-    return user.toDto(UserResDto);
+  async searchUserByEmail(myId: Uuid,partnerEmail: string): Promise<any>{
+    assert(partnerEmail, 'email is required');
+    const user = await this.userRepository.findOneOrFail({
+      where: { email: partnerEmail },
+      select:['id','avatarUrl','bio','email','dob','username','gender']
+    });
+    const userId = user.id;
+
+    const relation = await this.relationRepository
+      .createQueryBuilder('relation')
+      .leftJoinAndSelect('relation.requester', 'requester')
+      .leftJoinAndSelect('relation.handler', 'handler')
+      .where(
+        '(relation.requesterId = :myId AND relation.handlerId = :userId) OR (relation.requesterId = :userId AND relation.handlerId = :myId)',
+        { myId, userId }
+      )
+      .select([
+        'relation.id',
+        'relation.status',
+        'requester.id',
+        'requester.username',
+        'requester.email',
+        'requester.avatarUrl',
+        'requester.dob',
+        'requester.gender',
+        'handler.id',
+        'handler.username',
+        'handler.email',
+        'handler.avatarUrl',
+        'handler.dob',
+        'handler.gender',
+      ])
+      .getOne(); 
+      
+    if (!relation) {
+      return{
+        status: RelationStatus.NOTTHING,
+        user: user
+      }
+    }  
+      
+    const inviter = myId == relation.requester.id ? InviterType.SELF : InviterType.OTHER
+
+    return {
+      id: relation.id,
+      status: relation.status,
+      inviter: inviter,
+      user: inviter == InviterType.SELF ? relation.handler : relation.requester,
+    }
   }
 
   private generatePassword(length: number): string{

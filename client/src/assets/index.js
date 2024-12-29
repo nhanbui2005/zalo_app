@@ -15,6 +15,8 @@ export const Assets = {
     like: uriIcons + 'like.png',
     send: uriIcons + 'send.png',
     google: uriIcons + 'google.png',
+    setting: uriIcons + 'settings.png',
+    settingOutLine: uriIcons + 'settings-out-line.png',
   },
   images:{
     avatarDefault: uriImages + 'avatar-default.png'

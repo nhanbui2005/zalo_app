@@ -21,5 +21,6 @@ export enum ErrorCode {
   //RELATION
   RELATION_E001 = 'relation.error.exists',
   RELATION_E002 = 'relation.error.not_exists',
+  RELATION_E003 = 'relation.error.not_handle',
 
 }

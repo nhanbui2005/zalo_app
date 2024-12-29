@@ -1,6 +1,7 @@
 import { Uuid } from '@/common/types/common.type';
+import { RelationStatus } from '@/constants/entity-enum/relation.enum';
 import {
-  EnumField,
+  EnumFieldOptional,
 } from '@/decorators/field.decorators';
 
 enum GetRelationsType{
@@ -9,6 +10,9 @@ enum GetRelationsType{
 }
 
 export class GetListRelationReqDto {
-  @EnumField(()=> GetRelationsType)
+  @EnumFieldOptional(()=> GetRelationsType)
   type: Uuid
+
+  @EnumFieldOptional(()=> RelationStatus)
+  status: RelationStatus
 }

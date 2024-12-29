@@ -7,10 +7,11 @@ import { RoleEntity } from './entities/role.entity';
 import { AuthProviderEntity } from './entities/auth-provider.entity';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueName, QueuePrefix } from '@/constants/job.constant';
+import { RelationEntity } from '../relationship/entities/relation.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity,RoleEntity,AuthProviderEntity]),
+    TypeOrmModule.forFeature([UserEntity,RoleEntity,AuthProviderEntity, RelationEntity]),
     BullModule.registerQueue({
       name: QueueName.EMAIL,
       prefix: QueuePrefix.AUTH,
