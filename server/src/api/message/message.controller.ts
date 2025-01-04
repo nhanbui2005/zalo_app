@@ -1,9 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { MessageService } from './message.service';
 import { ApiTags } from '@nestjs/swagger';
 import { SendMessageReqDto } from './dto/send-message.req.dto';
 import { CurrentUser } from '@/decorators/current-user.decorator';
 import { Uuid } from '@/common/types/common.type';
+import { CursorPaginationDto } from '@/common/dto/cursor-pagination/cursor-pagination.dto';
+import { CursorPaginatedDto } from '@/common/dto/cursor-pagination/paginated.dto';
+import { LoadMoreMessagesReqDto } from './dto/load-more-messages.req.dto';
+import { MessageResDto } from './dto/message.res.dto';
 // import { UpdateMessageDto } from './dto/update-message.dto';
 
 @ApiTags('messages')
@@ -23,8 +27,10 @@ export class MessageController {
   }
 
   @Get()
-  findAll() {
-    return this.messageService.findAll();
+  findAll(
+    @Query() reqDto: LoadMoreMessagesReqDto,
+  ): Promise<CursorPaginatedDto<MessageResDto>> {
+    return this.messageService.loadMoreMessage(reqDto);
   }
 
   @Get(':id')

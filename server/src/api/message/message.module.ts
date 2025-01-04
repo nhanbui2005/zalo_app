@@ -8,10 +8,7 @@ import { ChatRoomEntity } from './entities/chat-room.entity';
 import { MemberEntity } from './entities/member.entity';
 import { MessageEntity } from './entities/message.entity';
 import { LoggerMiddleware } from 'src/middleware/guard-socket.middleware';
-import { APP_GUARD } from '@nestjs/core';
-import { AuthService } from '../auth/auth.service';
 import { AuthModule } from '../auth/auth.module';
-import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports:[

@@ -1,7 +1,7 @@
 import { Uuid } from "@/common/types/common.type";
 import { RoomType } from "@/constants/entity.enum";
 import { AbstractEntity } from "@/database/entities/abstract.entity";
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { MessageEntity } from "./message.entity";
 import { MemberEntity } from "./member.entity";
 
@@ -36,10 +36,9 @@ export class ChatRoomEntity extends AbstractEntity {
   @Column({name:'member_limit', type:'integer', default:MEMBER_LIMIT})
   memberLimit: number = MEMBER_LIMIT
 
-  @ManyToMany(()=>MemberEntity)
-  @JoinTable()
+  @OneToMany(()=>MemberEntity, (member) => member.room)
   members: MemberEntity[]
 
   @OneToMany(()=>MessageEntity,(message) => message.room)
-  messages!: MessageEntity[]
+  messages: MessageEntity[]
 }

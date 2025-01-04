@@ -96,7 +96,6 @@ export class UserController {
     @Query() reqDto: ListUserReqDto,
     @Req() req: any,
   ): Promise<OffsetPaginatedDto<UserResDto>> {
-    console.log(req.user);
     return await this.userService.findAll(reqDto);
   }
 

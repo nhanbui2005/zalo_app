@@ -14,6 +14,8 @@ import { UserEntity } from '../user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
 import { EventEmitterKey } from '@/constants/event-emitter.constant';
+import { createEventKey } from '@/utils/socket.util';
+import { EventKey } from '@/constants/event.constants';
 
 @Injectable()
 @WebSocketGateway({ namespace: '/message' })
@@ -37,7 +39,16 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   @OnEvent(EventEmitterKey.NEW_MESSAGE)
   async newMessage(data: any) {
+    console.log('dô',data);
+    
     const { members } = data
+
+    await Promise.all(await members.map( async (member) => {      
+      this.server.emit(
+        createEventKey(EventKey.NEW_MESSAGE, member.userId),
+        data
+      )
+    }))
 
     //check clients online or offline
     let onlineClients = []

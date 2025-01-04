@@ -1,13 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Assets } from '../assets'
 import SquareIcon from '../components/icon/squareIcon'
 import { AddFriendModal } from '../components/modal/AddFriendModal'
+import relationAPI from '../service/relationAPI'
 
 export default function ChatPage() {
   const [isInputFocus, setIsInputFocus] = useState(false)
   const [textContent, setTextContent] = useState('')
   const [messages, setMessages] = useState(conversation)
   const [isModalOpen, setIsModelOpen] = useState(false)
+  const [conversations, setConversations] = useState([])
 
   const Search = () => {
     const [isFocus, setIsFocus] = useState(false)
@@ -56,7 +58,7 @@ export default function ChatPage() {
     setMessages([...messages, itemMessage])
     setTextContent('')
   }
-  const ConversationItem = ({ type, image, name, lastText, messLasted }) => {
+  const ConversationItem = ({ type, user , lastText, messLasted }) => {
     const [isHover, setIsHover] = useState(false)
     return (
       <div
@@ -66,12 +68,12 @@ export default function ChatPage() {
       >
         <img
           className="rounded-full size-12"
-          src="https://via.placeholder.com/150"
+          src={user.avatarUrl}
           alt="Placeholder"
         />
         <div className="mx-2 flex w-full gap-1 flex-col py-1">
           <div className="flex flex-row justify-between">
-            <p className="text-base text-white">{name}</p>
+            <p className="text-base text-white">{user.username}</p>
             {isHover ? (
               <SquareIcon className={'size-6'} src={Assets.icons.more} />
             ) : (
@@ -99,6 +101,17 @@ export default function ChatPage() {
       </div>
     )
   }
+
+  const fetchConversations = async () => {
+    const data = await relationAPI.getAllRelationsRequestAPI({status: 'friend'})
+    setConversations(data)
+  }
+
+  useEffect(() => {
+    fetchConversations()
+  }, [])
+  
+
   return (
     <div className="flex size-full flex-row bg-dark-2">
       {/* danh sách hội thoại */}
@@ -115,11 +128,12 @@ export default function ChatPage() {
         </div>
         {/* content */}
         <div className="flex-grow bg-dark-3">
-          {conversations.map((item) => (
+          {conversations.map((item, index) => (
             <ConversationItem
-              name={item.name}
-              lastText={item.lastText}
-              messLasted={item.messLasted}
+              key={index.toString()}
+              user={item.user}
+              lastText={'hello'}
+              messLasted={'1h trước'} 
             />
           ))}
         </div>
@@ -195,15 +209,6 @@ export default function ChatPage() {
     </div>
   )
 }
-
-var conversations = [
-  { id: 1, name: 'Nguyễn Văn A', lastText: 'Hello', messLasted: '1 phút' },
-  { id: 1, name: 'Nguyễn Văn A', lastText: 'Hello', messLasted: '1 phút' },
-  { id: 1, name: 'Nguyễn Văn A', lastText: 'Hello', messLasted: '1 phút' },
-  { id: 1, name: 'Nguyễn Văn A', lastText: 'Hello', messLasted: '1 phút' },
-  { id: 1, name: 'Nguyễn Văn A', lastText: 'Hello', messLasted: '1 phút' },
-  { id: 1, name: 'Nguyễn Văn A', lastText: 'Hello', messLasted: '1 phút' },
-]
 var user1 = {
   id: 1,
   name: 'Nguyễn Văn A',

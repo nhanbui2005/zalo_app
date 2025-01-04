@@ -8,7 +8,6 @@ import { ChatRoomEntity } from './entities/chat-room.entity';
 import { MessageEntity } from './entities/message.entity';
 import {
   MemberRole,
-  MessageContentType,
   MessageViewStatus,
   RoomType,
 } from '@/constants/entity.enum';
@@ -20,9 +19,11 @@ import { UserResDto } from '../user/dto/user.res.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SendMessageReqDto } from './dto/send-message.req.dto';
 import { Uuid } from '@/common/types/common.type';
-import { createEventKey } from '@/utils/socket.util';
-import { EventKey } from '@/constants/event.constants';
 import { EventEmitterKey } from '@/constants/event-emitter.constant';
+import { SYSTEM_USER_ID } from '@/constants/app.constant';
+import { LoadMoreMessagesReqDto } from './dto/load-more-messages.req.dto';
+import { MessageResDto } from './dto/message.res.dto';
+import { SortEnum } from '@/constants/sort.enum';
 
 @Injectable()
 export class MessageService {
@@ -40,59 +41,70 @@ export class MessageService {
 
   async sendMessage(dto: SendMessageReqDto, senderId: Uuid) {
     const { roomId, receiverId, content, contentType } = dto;
-    let room = await this.chatRoomRepository.findOne({ 
-      where: { id: roomId },
-      relations:['members']
-    });
+    
+    let room = await this.chatRoomRepository
+      .createQueryBuilder('chatRoom')
+      .select([
+        'chatRoom.id',
+      ])
+      .leftJoin('chatRoom.members', 'members')
+      .addSelect(['members.id','members.userId']) 
+      .where('chatRoom.id = :roomId', { roomId })
+      .getOne();
 
-    if (!roomId) {
-      room = new ChatRoomEntity({
-        type: RoomType.PERSONAL,
-      });
+    let memberSent: MemberEntity;
+  
+    if (!room) {
+      // Nếu không tồn tại room, tạo mới
+      room = await this.createChatRoom(senderId, receiverId);
       await this.chatRoomRepository.save(room);
-
-      const member1 = new MemberEntity({
-        userId: senderId,
-        roomId: room.id,
-        role: MemberRole.MEMBER,
-      });
-      const member2 = new MemberEntity({
-        userId: receiverId,
-        roomId: room.id,
-        role: MemberRole.MEMBER,
-      });
-
-      await this.memberRepository.save([member1, member2]);
     }
-
+  
+    if (!memberSent) {
+      memberSent = await this.memberRepository.findOne({
+        where: { roomId, userId: senderId },
+      });
+    }
+    
+    if (!memberSent) {
+      throw new Error('Member sender not found');
+    }
+    
     const newMessage = new MessageEntity({
-      senderId: senderId,
+      senderId: memberSent.id,
       roomId: room.id,
-      content: content,
+      content,
       type: contentType,
       status: MessageViewStatus.RECEIVED,
+      createdBy: senderId,
+      updatedBy: senderId,
     });
+    
     await this.messageRepository.save(newMessage);
-
-    //sent notify to user reister this room or receiver
-
+  
+    // Gửi thông báo sự kiện
     this.eventEmitter.emit(EventEmitterKey.NEW_MESSAGE, {
       status: 'ok',
+      content,
+      contentType,
+      roomId: room.id,
+      memberSentId: memberSent.id,
       members: room.members,
     });
   }
+  
 
-  async loadMoreMessage(reqDto: any): Promise<CursorPaginatedDto<any>> {
+  async loadMoreMessage(reqDto: LoadMoreMessagesReqDto): Promise<CursorPaginatedDto<MessageResDto>> {    
     const queryBuilder = this.messageRepository
       .createQueryBuilder('message')
-      .where('message:roomId = roomId', { roomId: reqDto.roomId });
+      .where('message.room_id = room_id', { room_id: reqDto.roomId });
     const paginator = buildPaginator({
       entity: MessageEntity,
       alias: 'message',
       paginationKeys: ['createdAt'],
       query: {
         limit: reqDto.limit,
-        order: 'DESC',
+        order: SortEnum.ASC,
         afterCursor: reqDto.afterCursor,
         beforeCursor: reqDto.beforeCursor,
       },
@@ -107,7 +119,7 @@ export class MessageService {
       reqDto,
     );
 
-    return new CursorPaginatedDto(plainToInstance(UserResDto, data), metaDto);
+    return new CursorPaginatedDto(plainToInstance(MessageResDto, data), metaDto);
   }
 
   findAll() {
@@ -125,4 +137,38 @@ export class MessageService {
   remove(id: number) {
     return `This action removes a #${id} message`;
   }
+
+  private async createChatRoom(senderId: Uuid, receiverId: Uuid): Promise<ChatRoomEntity> {
+    const room = new ChatRoomEntity({
+      type: RoomType.PERSONAL,
+      createdBy: senderId,
+      updatedBy: senderId,
+    });
+  
+    const member1 = new MemberEntity({
+      userId: senderId,
+      roomId: room.id,
+      role: MemberRole.MEMBER,
+      createdBy: SYSTEM_USER_ID,
+      updatedBy: SYSTEM_USER_ID,
+    });
+  
+    const member2 = new MemberEntity({
+      userId: receiverId,
+      roomId: room.id,
+      role: MemberRole.MEMBER,
+      createdBy: SYSTEM_USER_ID,
+      updatedBy: SYSTEM_USER_ID,
+    });
+  
+    await this.memberRepository.save([member1, member2]);
+  
+    room.members = [member1, member2];
+    room.memberLimit = 2;
+    
+    await this.chatRoomRepository.save(room);
+  
+    return room;
+  }
+  
 }

@@ -28,19 +28,19 @@ export class MemberEntity extends AbstractEntity{
   @OneToMany(()=>MessageEntity,(message)=>message.sender)
   messages: MessageEntity[]
 
-  @ManyToOne(()=>UserEntity)
+  @ManyToOne(()=>UserEntity, (userEntity) => userEntity.members)
   @JoinColumn({
     name:'user_id',
     referencedColumnName:'id',
     foreignKeyConstraintName:'FK_member_user'
   })
-  user!: UserEntity
+  user: UserEntity
 
-  @ManyToOne(()=>ChatRoomEntity)
+  @ManyToOne(()=>ChatRoomEntity, (chatRoom) => chatRoom.members)
   @JoinColumn({
     name:'room_id',
     referencedColumnName:'id',
     foreignKeyConstraintName:'FK_member_chatroom'
   })
-  room!: ChatRoomEntity
+  room: ChatRoomEntity
 }

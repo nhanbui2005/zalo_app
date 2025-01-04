@@ -13,6 +13,7 @@ import { SessionEntity } from './session.entity';
 import { RoleEntity } from './role.entity';
 import { RelationEntity } from '@/api/relationship/entities/relation.entity';
 import { Gender } from '@/constants/entity.enum';
+import { MemberEntity } from '@/api/message/entities/member.entity';
 
 const DEFAULT_AVATAR_URL = 'https://gravatar.com/avatar/6d280e4498beb5ccc61ab02afbd18d78?s=400&d=robohash&r=x'
 @Entity('user')
@@ -70,9 +71,18 @@ export class UserEntity extends AbstractEntity {
   //client socket id
   @Column({name:'client_id', nullable:true})
   clientId: Uuid
+
+  @Column({name:'is_online', default: false})
+  isOnline: Uuid
+  
+  @Column({name:'lastOnline', default: new Date()})
+  lastOnline: Date
   
   @OneToMany(() => SessionEntity,(session) => session.user)
   sessions?: SessionEntity[]
+
+  @OneToMany(() => MemberEntity,(members) => members.user)
+  members?: SessionEntity[]
 
   @ManyToMany(() => RoleEntity)
   @JoinTable()

@@ -120,16 +120,10 @@ export class RelationService {
         'relation.status',
         'requester.id',
         'requester.username',
-        'requester.email',
         'requester.avatarUrl',
-        'requester.dob',
-        'requester.gender',
         'handler.id',
         'handler.username',
-        'handler.email',
         'handler.avatarUrl',
-        'handler.dob',
-        'handler.gender',
       ])
 
     if (status) {

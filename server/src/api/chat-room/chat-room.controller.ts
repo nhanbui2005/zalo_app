@@ -1,9 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Req } from '@nestjs/common';
 import { ChatRoomService } from './chat-room.service';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
+import { ApiTags } from '@nestjs/swagger';
+import { ListRoomReqDto } from './dto/list-room.req.dto';
+import { ApiAuth } from '@/decorators/http.decorators';
+import { CurrentUser } from '@/decorators/current-user.decorator';
+import { Uuid } from '@/common/types/common.type';
 
-@Controller('chat-room')
+@ApiTags('rooms')
+@Controller({
+  version:'1',
+  path:'rooms'
+})
 export class ChatRoomController {
   constructor(private readonly chatRoomService: ChatRoomService) {}
 
@@ -13,8 +22,11 @@ export class ChatRoomController {
   }
 
   @Get()
-  findAll() {
-    return this.chatRoomService.findAll();
+  findAll(
+    @Query() reqDto: ListRoomReqDto,
+    @CurrentUser('id') meId: Uuid
+  ) {
+    return this.chatRoomService.findAll(reqDto, meId);
   }
 
   @Get(':id')

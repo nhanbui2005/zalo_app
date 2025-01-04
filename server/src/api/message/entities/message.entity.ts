@@ -42,21 +42,21 @@ export class MessageEntity extends AbstractEntity{
   @Column({type:'enum', enum:MessageViewStatus})
   status: MessageViewStatus
 
-  @ManyToOne(()=>MemberEntity)
+  @ManyToOne(()=>MemberEntity, (member) => member.messages)
   @JoinColumn({
     name:'sender_id',
     referencedColumnName:'id',
     foreignKeyConstraintName:'FK_message_sender'
   })
-  sender!: MemberEntity
+  sender?: MemberEntity
 
-  @ManyToOne(()=>ChatRoomEntity)
+  @ManyToOne(()=>ChatRoomEntity, (room) => room.messages)
   @JoinColumn({
     name:'room_id',
     referencedColumnName:'id',
     foreignKeyConstraintName:'FK_message_chatroom'
   })
-  room!: ChatRoomEntity
+  room?: ChatRoomEntity
 
   @OneToOne(()=>MessageEntity)
   @JoinColumn({
@@ -64,5 +64,5 @@ export class MessageEntity extends AbstractEntity{
     referencedColumnName:'id',
     foreignKeyConstraintName:'FK_replymessage_message'
   })
-  messageReply: MessageEntity
+  messageReply?: MessageEntity
 }

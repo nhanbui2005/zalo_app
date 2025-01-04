@@ -1,4 +1,5 @@
 import {
+  BooleanField,
   ClassField,
   EnumField,
   StringField,
@@ -31,6 +32,14 @@ export class UserResDto {
   @StringField()
   @Expose()
   avatarPid: string;
+
+  @BooleanField()
+  @Expose()
+  isOnline: boolean;
+
+  @ClassField(() => Date)
+  @Expose()
+  lastOnline: Date;
 
   @ClassField(() => Date)
   @Expose()

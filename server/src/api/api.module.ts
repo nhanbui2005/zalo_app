@@ -6,6 +6,7 @@ import { MessageModule } from './message/message.module';
 import { RelationModule } from './relationship/relation.module';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { UploadModule } from './upload/upload.module';
+import { ChatRoomModule } from './chat-room/chat-room.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UploadModule } from './upload/upload.module';
     AuthModule,
     HomeModule,
     MessageModule,
+    ChatRoomModule,
     RelationModule,
     CloudinaryModule,
     UploadModule
