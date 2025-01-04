@@ -13,8 +13,29 @@ const loadMoreMessage = async (data) => {
   }
 }
 
+const sentMessage = async ({receiverId, roomId, content, contentType}) => {
+  // const {receiverId, roomId, content, contentType} = data  
+  try {
+    // const {roomId} = data
+    // let query = `roomId=${roomId}`
+    // if (roomId) {
+    //   query += 'roomId='
+    // }
+    return await AxiosInstant.post('messages',{
+      receiverId,
+      roomId,
+      content,
+      contentType
+    })
+  } catch (error) {
+    console.log('lỗi',error);
+    
+  }
+}
+
 const messageAPI = {
-  loadMoreMessage
+  loadMoreMessage,
+  sentMessage
 }
 
 export default messageAPI

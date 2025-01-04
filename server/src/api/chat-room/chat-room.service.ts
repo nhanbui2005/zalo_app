@@ -37,6 +37,7 @@ export class ChatRoomService {
         'user.avatarUrl',
         'user.username'
       ])
+      .where('user.id = :meId',{meId: meId})
       .orderBy('room.createdAt', SortEnum.DESC);
     let [rooms, metaDto] = await paginate<ChatRoomEntity>(query, reqDto, {
       skipCount: false,

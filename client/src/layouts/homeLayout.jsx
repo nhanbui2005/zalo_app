@@ -37,6 +37,8 @@ export default function HomeLayout({ children }) {
   const onLogout = async () =>{
     try {
       dispatch(logout())
+      localStorage.clear();
+      sessionStorage.clear();
     } catch (error) {
       
     }

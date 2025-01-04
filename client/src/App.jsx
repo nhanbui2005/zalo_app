@@ -14,31 +14,41 @@ export default function App() {
   const dispatch = useDispatch()
   const accessToken = useSelector((state) => state.me.auth.accessToken)
   const email = useSelector((state) => state.me.user?.email)
+  const meId = useSelector((state) => state.me.user?.id)
 
-  useEffect(() => {
-    // Kết nối đến server
-    const socket = io('http://localhost:7777', {
-      transports: ['websocket'], // Ép buộc sử dụng WebSocket
-    });
+  // useEffect(() => {
+  //   // Kết nối đến server
+  //   const socket = io('http://localhost:7777/message', {
+  //     transports: ['websocket'], // Ép buộc sử dụng WebSocket
+  //   });
+  //   const messageNamespace = io.of("/message");
+  //   messageNamespace.
 
-    // Lắng nghe sự kiện "connected"
-    socket.on("connected", (data) => {
-      console.log(data);
-    });
+  //   // Lắng nghe sự kiện "connected"
+  //   socket.on("connected", (data) => {
+  //     console.log('message',data);
+  //   });
 
-    // Gửi một sự kiện tới server
-    socket.emit("message", { content: "Hello from ReactJS" });
+  //   // Gửi một sự kiện tới server
+  //   socket.emit("message", { content: "Hello from ReactJS" });
 
-    // Lắng nghe sự kiện "newMessage"
-    socket.on("newMessage", (data) => {
-      console.log("Received a new message:", data);
-    });
+  //   // Lắng nghe sự kiện "newMessage"
+  //   socket.on(`event:notify:${meId}:new_message`, (data) => {
+  //     console.log("Received a new message:", data);
+  //   });
 
-    // Dọn dẹp kết nối khi component bị hủy
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
+  //   socket.on('newmessage', (data) => {
+  //     console.log("Received a new message:", data);
+  //   });
+    
+  //   console.log("meid:",meId);
+    
+
+  //   // Dọn dẹp kết nối khi component bị hủy
+  //   return () => {
+  //     socket.disconnect();
+  //   };
+  // }, []);
 
   
 
@@ -61,8 +71,8 @@ export default function App() {
         element={
           <PrivateRoute>
             <HomeLayout>
-                <ChatPage></ChatPage>
-              </HomeLayout>
+              <ChatPage></ChatPage>
+            </HomeLayout>
           </PrivateRoute>
         }
       />

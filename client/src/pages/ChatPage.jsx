@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Assets } from '../assets'
 import SquareIcon from '../components/icon/squareIcon'
 import { AddFriendModal } from '../components/modal/AddFriendModal'
 import roomAPI from '../service/roomAPI'
 import messageAPI from '../service/messageAPI'
+import { io } from 'socket.io-client'
+import { useSelector } from 'react-redux'
 
 export default function ChatPage() {
   const [isInputFocus, setIsInputFocus] = useState(false)
@@ -12,10 +14,19 @@ export default function ChatPage() {
   const [isModalOpen, setIsModelOpen] = useState(false)
   const [conversations, setConversations] = useState([])
   const [currentRoom, setCurrentRoom] = useState()
+  const messagesEndRef = useRef(null)
+  const meId = useSelector((state) => state.me.user?.id)
 
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior: 'smooth',
+      })
+    }
+  }
   const Search = () => {
     const [isFocus, setIsFocus] = useState(false)
-    
+
     return (
       <div
         className={`${
@@ -37,10 +48,10 @@ export default function ChatPage() {
     const [isSelected, setIsSelected] = useState(items[0])
     return (
       <div className="flex gap-3">
-        {items.map((item) => (
-          <div className="" onClick={() => setIsSelected(item)}>
+        {items.map((item,index) => (
+          <div key={index.toString()} className="" onClick={() => setIsSelected(item)}>
             <p
-              className={`text-sm font-semibold hover:text-blue-500 ${isSelected === item ?  'text-blue-500' : 'text-slate-400'}`}
+              className={`text-sm font-semibold hover:text-blue-500 ${isSelected === item ? 'text-blue-500' : 'text-slate-400'}`}
             >
               {item}
             </p>
@@ -50,37 +61,47 @@ export default function ChatPage() {
       </div>
     )
   }
-  const SendMessage = (userId, message) => {
-    const itemMessage = {
-      id: 1,
-      userId: userId,
-      message: message,
-      sentAt: '1 phút',
-    }
-    setMessages([...messages, itemMessage])
-    setTextContent('')
+  const SendMessage = async (userId, message) => {
+    try {
+      const newMessage = await messageAPI.sentMessage({
+        receiverId: currentRoom.id,
+        roomId: currentRoom.id,
+        content: message,
+        contentType: 'text',
+      })
+      newMessage.isSelfSent = true
+      addNewMessage(newMessage)
+      setTextContent('')
+    } catch (error) {}
   }
-  const ConversationItem = ({ id, avatarUrl, name, lastText, messLasted, onClick }) => {
+  const ConversationItem = ({
+    id,
+    avatarUrl,
+    name,
+    lastText,
+    messLasted,
+    onClick,
+  }) => {
     const [isHover, setIsHover] = useState(false)
     return (
       <div
-        className="flex h-20 w-full flex-row p-2 hover:bg-dark-4 items-center"
+        className="flex h-20 w-full flex-row items-center p-2 hover:bg-dark-4"
         onMouseEnter={() => setIsHover(true)}
         onMouseLeave={() => setIsHover(false)}
-        onClick={()=>onClick(id)}
+        onClick={() => onClick(id)}
       >
         <img
-          className="rounded-full size-12"
+          className="size-12 rounded-full"
           src={avatarUrl}
           alt="Placeholder"
         />
-        <div className="mx-2 flex w-full gap-1 flex-col py-1">
+        <div className="mx-2 flex w-full flex-col gap-1 py-1">
           <div className="flex flex-row justify-between">
             <p className="text-base text-white">{name}</p>
             {isHover ? (
               <SquareIcon className={'size-6'} src={Assets.icons.more} />
             ) : (
-              <p className="text-slate-400 text-sm">{messLasted}</p>
+              <p className="text-sm text-slate-400">{messLasted}</p>
             )}
           </div>
           <p className="text-slate-400">{lastText}</p>
@@ -89,7 +110,7 @@ export default function ChatPage() {
     )
   }
   const MessageItem = ({ data }) => {
-    const {content, type, status, sender, isSelfSent, createdAt} = data
+    const { content, type, status, sender, isSelfSent, createdAt } = data
     return (
       <div className={`my-10 flex ${isSelfSent && 'flex-row-reverse'}`}>
         <img
@@ -106,24 +127,47 @@ export default function ChatPage() {
       </div>
     )
   }
-
-  const onItemRoomClick = (id) =>{
-
+  const addNewMessage = (newMessage) => {
+    setMessages((prevMessages) => [newMessage, ...prevMessages])
+    scrollToBottom()
   }
 
+  useEffect(() => {
+    // Kết nối đến server
+    const socket = io('http://localhost:7777/message', {
+      transports: ['websocket'], // Ép buộc sử dụng WebSocket
+    })
+
+    // Lắng nghe sự kiện "connected"
+    socket.on('connected', (data) => {
+      console.log('message', data)
+    })
+
+    // Lắng nghe sự kiện "newMessage"
+    socket.on(`event:notify:${meId}:new_message`, (data) => {
+      setMessages((prevMessages) => [data, ...prevMessages])
+    })
+
+    // Dọn dẹp kết nối khi component bị hủy
+    return () => {
+      socket.disconnect()
+    }
+  }, [])
+
+  const onItemRoomClick = (id) => {}
+
   const fetchConversations = async () => {
-    const data = await roomAPI.getAllRoomAPI()    
+    const data = await roomAPI.getAllRoomAPI()
     setConversations(data.data)
     setCurrentRoom(data.data[0])
   }
 
   const fetchLoadMoreMessages = async () => {
     const data = await messageAPI.loadMoreMessage({
-      roomId: currentRoom.id
+      roomId: currentRoom.id,
     })
     setMessages(data.data)
   }
-  
 
   useEffect(() => {
     fetchConversations()
@@ -134,7 +178,6 @@ export default function ChatPage() {
       fetchLoadMoreMessages()
     }
   }, [currentRoom])
-  
 
   return (
     <div className="flex size-full flex-row bg-dark-2">
@@ -144,9 +187,13 @@ export default function ChatPage() {
         <div className="mb-0.5 flex h-28 flex-col justify-between bg-dark-3 px-4 pt-4">
           <div className="flex flex-row">
             <Search />
-            <SquareIcon onClick={()=>setIsModelOpen(true)} src={Assets.icons.addFriend} className={'mx-1'} />
+            <SquareIcon
+              onClick={() => setIsModelOpen(true)}
+              src={Assets.icons.addFriend}
+              className={'mx-1'}
+            />
             <SquareIcon src={Assets.icons.addGroup} />
-            <AddFriendModal isOpen={isModalOpen} setIsOpen={setIsModelOpen}/>
+            <AddFriendModal isOpen={isModalOpen} setIsOpen={setIsModelOpen} />
           </div>
           <SelectedTab />
         </div>
@@ -178,7 +225,9 @@ export default function ChatPage() {
                 alt="Placeholder"
               />
               <div className="mx-3 flex w-full flex-col justify-between py-1">
-                <p className="text-lg font-bold text-cyan-50">{currentRoom?.roomName}</p>
+                <p className="text-lg font-bold text-cyan-50">
+                  {currentRoom?.roomName}
+                </p>
                 <p className="text-sm text-slate-400">Truy cập 1 giờ trước</p>
               </div>
             </div>
@@ -188,20 +237,17 @@ export default function ChatPage() {
           </div>
           {/* nội dung hội thoại */}
           <div className="h-full overflow-auto p-8 scrollbar-hide">
-            {[...messages].reverse().map((item) => {
-              return (
-                <MessageItem
-                  data={item}
-                />
-              )
-            })}
+            {[...messages].reverse().map((item, index) => (
+              <MessageItem key={index.toString()} data={item} />
+            ))}
+            <div ref={messagesEndRef} className='h-5 w-full'/> {/* Placeholder để cuộn tới */}
           </div>
           {/* nhập tin nhắn */}
           <div
             className={`${isInputFocus ? 'bg-blue-600' : 'bg-dark-2'} mt-0.5 flex flex-col gap-0.5`}
           >
             <div className="h-8 w-full bg-dark-3 px-2"></div>
-            <div className="flex flex-row items-center justify-center bg-dark-3 px-4 h-12">
+            <div className="flex h-12 flex-row items-center justify-center bg-dark-3 px-4">
               <input
                 className="w-full bg-dark-3 text-base text-cyan-50 focus:outline-none"
                 placeholder="Nhập @, tin nhắn..."
@@ -216,7 +262,9 @@ export default function ChatPage() {
                   textContent.length > 0 ? Assets.icons.send : Assets.icons.like
                 }
                 onClick={() => {
-                  textContent.length > 0 && SendMessage(2, textContent)
+                  if (textContent.length > 0) {
+                    SendMessage(2, textContent)
+                  }
                 }}
               />
             </div>

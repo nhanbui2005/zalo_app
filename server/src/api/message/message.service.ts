@@ -39,7 +39,7 @@ export class MessageService {
     private eventEmitter: EventEmitter2,
   ) {}
 
-  async sendMessage(dto: SendMessageReqDto, senderId: Uuid) {
+  async sendMessage(dto: SendMessageReqDto, senderId: Uuid): Promise<MessageResDto> {
     const { roomId, receiverId, content, contentType } = dto;
     
     let room = await this.chatRoomRepository
@@ -61,9 +61,26 @@ export class MessageService {
     }
   
     if (!memberSent) {
-      memberSent = await this.memberRepository.findOne({
-        where: { roomId, userId: senderId },
-      });
+      // memberSent = await this.memberRepository.findOne({
+      //   where: { roomId, userId: senderId },
+      //   relations:['user'],
+      //   select:[
+      //     'id',
+      //     "user.username",
+      //     'user.avatarUrl'
+      //   ]
+      // });
+      memberSent = await this.memberRepository
+        .createQueryBuilder('member')
+        .leftJoinAndSelect('member.user', 'user')
+        .select([
+          'member.id',
+          'user.username',
+          'user.avatarUrl',
+        ])
+        .where('member.roomId = :roomId', { roomId })
+        .andWhere('member.userId = :userId', { userId: senderId })
+        .getOne();
     }
     
     if (!memberSent) {
@@ -72,6 +89,7 @@ export class MessageService {
     
     const newMessage = new MessageEntity({
       senderId: memberSent.id,
+      sender: memberSent,
       roomId: room.id,
       content,
       type: contentType,
@@ -89,8 +107,11 @@ export class MessageService {
       contentType,
       roomId: room.id,
       memberSentId: memberSent.id,
-      members: room.members,
+      sender: memberSent,
+      members: room.members.filter(member => member.userId != senderId),
     });
+
+    return plainToInstance(MessageResDto, newMessage)
   }
   
 

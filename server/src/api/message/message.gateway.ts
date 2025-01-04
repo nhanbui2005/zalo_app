@@ -30,7 +30,9 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
   ) {}
 
   async handleConnection(@ConnectedSocket() client: Socket) {
-  
+    //lưu user đã online
+   // await this.cacheManager.set('a',client.id)
+    this.server.emit('connected',`Hello3 ${client.id}`)
   }
 
   async handleDisconnect(@ConnectedSocket() client: Socket) {
@@ -43,7 +45,7 @@ export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect 
     
     const { members } = data
 
-    await Promise.all(await members.map( async (member) => {      
+    await Promise.all(await members.map( async (member) => {
       this.server.emit(
         createEventKey(EventKey.NEW_MESSAGE, member.userId),
         data

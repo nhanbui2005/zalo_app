@@ -17,7 +17,7 @@ const WhoSent = {
 export const AddFriendModalInfoContent = ({
   data
 }) => {
-  const {partner} = data
+  const {user} = data
   const [status, setStatus] = useState(data.status) 
   const [whoSent, setWhoSent] = useState(data.whoSent)
   const [relationId, setRelationId] = useState(data.id)
@@ -36,7 +36,7 @@ export const AddFriendModalInfoContent = ({
   const sendRequestAddFriend = async () => {    
     try {
       const data = await relationAPI.sendRequestAddFriendAPI({
-        receiverId: partner.id
+        receiverId: user.id
       })
       setRelationId(data.id)
       setWhoSent(WhoSent.ME)
@@ -58,7 +58,7 @@ export const AddFriendModalInfoContent = ({
   const isMe = () => {
     console.log(me);
     
-    return me.id == partner.id
+    return me.id == user.id
   }
 
     
@@ -67,7 +67,7 @@ export const AddFriendModalInfoContent = ({
       {/* Profile Image */}
       <div className="mt-4 flex justify-center">
         <img
-          src={partner.avatarUrl}
+          src={user.avatarUrl}
           alt="Avatar"
           className="h-32 w-32 rounded-full object-cover"
         />
@@ -75,7 +75,7 @@ export const AddFriendModalInfoContent = ({
 
       {/* User Name */}
       <div className="mt-4 text-center">
-        <h3 className="text-xl font-semibold">{partner.username}</h3>
+        <h3 className="text-xl font-semibold">{user.username}</h3>
         {
           !isMe() && 
           <div className="mt-2 flex justify-center space-x-2">
@@ -102,15 +102,15 @@ export const AddFriendModalInfoContent = ({
       <div className="space-y-2 p-4">
         <div className="flex justify-between border-b border-gray-700 pb-2">
           <span className="text-gray-400">Giới tính</span>
-          <span>{partner.gender == 'male' ? 'Nam' : 'Nữ'}</span>
+          <span>{user.gender == 'male' ? 'Nam' : 'Nữ'}</span>
         </div>
         <div className="flex justify-between border-b border-gray-700 pb-2">
           <span className="text-gray-400">Ngày sinh</span>
-          <span>{partner.dob}</span>
+          <span>{user.dob}</span>
         </div>
         <div className="flex justify-between pb-2">
           <span className="text-gray-400">Email</span>
-          <span>{partner.email}</span>
+          <span>{user.email}</span>
         </div>
       </div>
 
