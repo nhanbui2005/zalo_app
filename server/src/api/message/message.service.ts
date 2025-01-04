@@ -94,32 +94,56 @@ export class MessageService {
   }
   
 
-  async loadMoreMessage(reqDto: LoadMoreMessagesReqDto): Promise<CursorPaginatedDto<MessageResDto>> {    
+  async loadMoreMessage(reqDto: LoadMoreMessagesReqDto, meId: Uuid): Promise<CursorPaginatedDto<MessageResDto>> {    
     const queryBuilder = this.messageRepository
       .createQueryBuilder('message')
-      .where('message.room_id = room_id', { room_id: reqDto.roomId });
+      .select([
+        'message.id',
+        'message.type',
+        'message.content',
+        'message.status',
+        'message.createdAt',
+      ])
+      .leftJoin('message.sender','sender')
+      .addSelect([
+        'sender.id',
+      ])
+      .leftJoin('sender.user','user')
+      .addSelect([
+        'user.id',
+        'user.username',
+        'user.avatarUrl',
+      ])
+      .where('message.roomId = :room_id', { room_id: reqDto.roomId });
     const paginator = buildPaginator({
       entity: MessageEntity,
       alias: 'message',
       paginationKeys: ['createdAt'],
       query: {
         limit: reqDto.limit,
-        order: SortEnum.ASC,
+        order: SortEnum.DESC,
         afterCursor: reqDto.afterCursor,
         beforeCursor: reqDto.beforeCursor,
       },
     });
 
     const { data, cursor } = await paginator.paginate(queryBuilder);
+    const result = data.map(item => {
+      return {
+        ...item,
+        isSelfSent: item.sender.user.id == meId
+      }
+    })
+    
 
     const metaDto = new CursorPaginationDto(
-      data.length,
+      result.length,
       cursor.afterCursor,
       cursor.beforeCursor,
       reqDto,
     );
 
-    return new CursorPaginatedDto(plainToInstance(MessageResDto, data), metaDto);
+    return new CursorPaginatedDto(plainToInstance(MessageResDto, result), metaDto);
   }
 
   findAll() {

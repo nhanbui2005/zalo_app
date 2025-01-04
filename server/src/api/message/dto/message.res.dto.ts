@@ -1,7 +1,9 @@
 import { Uuid } from '@/common/types/common.type';
 import { MessageContentType, MessageViewStatus } from '@/constants/entity.enum';
 import {
+  BooleanField,
   ClassField,
+  DateField,
   StringField,
 } from '@/decorators/field.decorators';
 import { Exclude, Expose } from 'class-transformer';
@@ -29,6 +31,14 @@ export class MessageResDto {
 
   @StringField()
   @Expose()
+  senderId: Uuid;
+
+  @BooleanField()
+  @Expose()
+  isSelfSent: boolean;
+
+  @StringField()
+  @Expose()
   status: MessageViewStatus;
 
   @ClassField(()=> MemberResDto)
@@ -42,4 +52,8 @@ export class MessageResDto {
   @ClassField(()=> MessageResDto)
   @Expose()
   messageReply?: WrapperType<MessageResDto>;
+
+  @DateField()
+  @Expose()
+  createdAt?: Date;
 }

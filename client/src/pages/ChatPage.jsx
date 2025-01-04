@@ -3,11 +3,12 @@ import { Assets } from '../assets'
 import SquareIcon from '../components/icon/squareIcon'
 import { AddFriendModal } from '../components/modal/AddFriendModal'
 import roomAPI from '../service/roomAPI'
+import messageAPI from '../service/messageAPI'
 
 export default function ChatPage() {
   const [isInputFocus, setIsInputFocus] = useState(false)
   const [textContent, setTextContent] = useState('')
-  const [messages, setMessages] = useState(conversation)
+  const [messages, setMessages] = useState([])
   const [isModalOpen, setIsModelOpen] = useState(false)
   const [conversations, setConversations] = useState([])
   const [currentRoom, setCurrentRoom] = useState()
@@ -87,18 +88,20 @@ export default function ChatPage() {
       </div>
     )
   }
-  const MessageItem = ({ message, isSender }) => {
+  const MessageItem = ({ data }) => {
+    const {content, type, status, sender, isSelfSent, createdAt} = data
     return (
-      <div className={`my-10 flex ${!isSender && 'flex-row-reverse'}`}>
+      <div className={`my-10 flex ${isSelfSent && 'flex-row-reverse'}`}>
         <img
           className="size-8 rounded-full"
-          src={user1.image}
+          src={sender.user.avatarUrl}
           alt="Placeholder"
         />
+        <p className="max-w-80 break-words text-white">{isSelfSent}</p>
         <div
-          className={`rounded bg-slate-500 p-2 ${isSender ? 'ml-2' : 'mr-2'}`}
+          className={`rounded bg-slate-500 p-2 ${!isSelfSent ? 'ml-2' : 'mr-2'}`}
         >
-          <p className="max-w-80 break-words">{message}</p>
+          <p className="max-w-80 break-words">{content}</p>
         </div>
       </div>
     )
@@ -114,9 +117,23 @@ export default function ChatPage() {
     setCurrentRoom(data.data[0])
   }
 
+  const fetchLoadMoreMessages = async () => {
+    const data = await messageAPI.loadMoreMessage({
+      roomId: currentRoom.id
+    })
+    setMessages(data.data)
+  }
+  
+
   useEffect(() => {
     fetchConversations()
   }, [])
+
+  useEffect(() => {
+    if (currentRoom) {
+      fetchLoadMoreMessages()
+    }
+  }, [currentRoom])
   
 
   return (
@@ -171,11 +188,10 @@ export default function ChatPage() {
           </div>
           {/* nội dung hội thoại */}
           <div className="h-full overflow-auto p-8 scrollbar-hide">
-            {messages.map((item) => {
+            {[...messages].reverse().map((item) => {
               return (
                 <MessageItem
-                  message={item.message}
-                  isSender={item.userId === me.id}
+                  data={item}
                 />
               )
             })}
@@ -228,23 +244,3 @@ var me = {
   name: 'Nguyễn Văn A',
   image: 'https://via.placeholder.com/150',
 }
-var conversation = [
-  {
-    id: 1,
-    userId: 1,
-    message:
-      'Hellojjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj',
-    sentAt: '1 phút',
-  },
-  { id: 1, userId: 1, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 2, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 1, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 2, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 2, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 2, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 2, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 2, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 2, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 2, message: 'Hello', sentAt: '1 phút' },
-  { id: 1, userId: 1, message: 'Hello', sentAt: '1 phút' },
-]

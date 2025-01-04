@@ -29,8 +29,9 @@ export class MessageController {
   @Get()
   findAll(
     @Query() reqDto: LoadMoreMessagesReqDto,
+    @CurrentUser('id') meId: Uuid
   ): Promise<CursorPaginatedDto<MessageResDto>> {
-    return this.messageService.loadMoreMessage(reqDto);
+    return this.messageService.loadMoreMessage(reqDto, meId);
   }
 
   @Get(':id')
