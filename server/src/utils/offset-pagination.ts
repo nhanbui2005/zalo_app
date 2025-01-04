@@ -14,12 +14,6 @@ export async function paginate<T extends ObjectLiteral>(
     builder.skip(pageOptionsDto.offset).take(pageOptionsDto.limit);
   }
 
-  // if (pageOptionsDto._sort.length > 0) {
-  //   pageOptionsDto._sort.map(item => {
-  //     builder.orderBy(item.field,item.order)
-  //   })
-  // }
-
   const entities: T[] = await builder.getMany();
 
   let count = -1;

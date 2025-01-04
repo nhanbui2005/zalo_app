@@ -41,7 +41,7 @@ export class ChatRoomService {
     let [rooms, metaDto] = await paginate<ChatRoomEntity>(query, reqDto, {
       skipCount: false,
       takeAll: false,
-    });
+    });    
 
     const data = rooms.map(room => {
       let roomAvatarUrl: string
@@ -62,8 +62,7 @@ export class ChatRoomService {
         roomAvatarUrl,
         roomName
       }
-    })
-    
+    })    
     return new OffsetPaginatedDto(plainToInstance(RoomResDto, data), metaDto);    
   }
 

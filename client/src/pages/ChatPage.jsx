@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Assets } from '../assets'
 import SquareIcon from '../components/icon/squareIcon'
 import { AddFriendModal } from '../components/modal/AddFriendModal'
-import relationAPI from '../service/relationAPI'
+import roomAPI from '../service/roomAPI'
 
 export default function ChatPage() {
   const [isInputFocus, setIsInputFocus] = useState(false)
@@ -10,6 +10,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState(conversation)
   const [isModalOpen, setIsModelOpen] = useState(false)
   const [conversations, setConversations] = useState([])
+  const [currentRoom, setCurrentRoom] = useState()
 
   const Search = () => {
     const [isFocus, setIsFocus] = useState(false)
@@ -58,22 +59,23 @@ export default function ChatPage() {
     setMessages([...messages, itemMessage])
     setTextContent('')
   }
-  const ConversationItem = ({ type, user , lastText, messLasted }) => {
+  const ConversationItem = ({ id, avatarUrl, name, lastText, messLasted, onClick }) => {
     const [isHover, setIsHover] = useState(false)
     return (
       <div
         className="flex h-20 w-full flex-row p-2 hover:bg-dark-4 items-center"
         onMouseEnter={() => setIsHover(true)}
         onMouseLeave={() => setIsHover(false)}
+        onClick={()=>onClick(id)}
       >
         <img
           className="rounded-full size-12"
-          src={user.avatarUrl}
+          src={avatarUrl}
           alt="Placeholder"
         />
         <div className="mx-2 flex w-full gap-1 flex-col py-1">
           <div className="flex flex-row justify-between">
-            <p className="text-base text-white">{user.username}</p>
+            <p className="text-base text-white">{name}</p>
             {isHover ? (
               <SquareIcon className={'size-6'} src={Assets.icons.more} />
             ) : (
@@ -102,9 +104,14 @@ export default function ChatPage() {
     )
   }
 
+  const onItemRoomClick = (id) =>{
+
+  }
+
   const fetchConversations = async () => {
-    const data = await relationAPI.getAllRelationsRequestAPI({status: 'friend'})
-    setConversations(data)
+    const data = await roomAPI.getAllRoomAPI()    
+    setConversations(data.data)
+    setCurrentRoom(data.data[0])
   }
 
   useEffect(() => {
@@ -131,9 +138,11 @@ export default function ChatPage() {
           {conversations.map((item, index) => (
             <ConversationItem
               key={index.toString()}
-              user={item.user}
+              avatarUrl={item.roomAvatarUrl}
+              name={item.roomName}
               lastText={'hello'}
-              messLasted={'1h trước'} 
+              messLasted={'1h trước'}
+              onClick={onItemRoomClick}
             />
           ))}
         </div>
@@ -148,11 +157,11 @@ export default function ChatPage() {
             <div className="flex w-full flex-row items-center">
               <img
                 className="size-12 rounded-full"
-                src={user1.image}
+                src={currentRoom?.roomAvatarUrl}
                 alt="Placeholder"
               />
               <div className="mx-3 flex w-full flex-col justify-between py-1">
-                <p className="text-lg font-bold text-cyan-50">{user1.name}</p>
+                <p className="text-lg font-bold text-cyan-50">{currentRoom?.roomName}</p>
                 <p className="text-sm text-slate-400">Truy cập 1 giờ trước</p>
               </div>
             </div>

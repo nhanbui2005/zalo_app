@@ -16,6 +16,14 @@ export class RoomResDto {
   @Expose()
   id: string;
 
+  @StringField()
+  @Expose()
+  roomAvatarUrl: string;
+
+  @StringField()
+  @Expose()
+  roomName: string;
+
   @EnumField(()=>RoomType)
   @Expose()
   type: RoomType;
