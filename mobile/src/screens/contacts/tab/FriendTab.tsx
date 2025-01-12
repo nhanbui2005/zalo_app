@@ -64,7 +64,7 @@ const FriendTab = () => {
         scrollEnabled={false}
         style={{marginTop: 30 }}
         data={friends}
-        renderItem={renderFriend} // Correct render function
+        renderItem={renderFriend} 
         keyExtractor={(item) => item.id} 
       />
     </View>
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: colors.primary, 
+    backgroundColor: colors.secondary_light, 
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15, 

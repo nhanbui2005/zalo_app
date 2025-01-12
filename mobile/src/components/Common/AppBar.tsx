@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Image, TextInput, TouchableOpacity, ViewStyle } from 'react-native';
+import { View, Text, Pressable, Image, TextInput, TouchableOpacity, ViewStyle, ImageSourcePropType } from 'react-native';
 import { viewStyle } from '../../styles/Ui/views';
 import { colors } from '../../styles/Ui/colors';
 import { Assets } from '../../styles/Ui/assets';
@@ -7,7 +7,7 @@ import { textStyle } from '../../styles/Ui/text';
 import { Fonts } from '../../styles/Ui/fonts';
 import { iconSize } from '../../styles/Ui/icons';
 
-type Actions =
+export type Actions =
   | 'find'
   | 'search'
   | 'back'
@@ -30,10 +30,10 @@ type AppBarProps = {
   onPress?: (action: Actions) => void;
   onPressInput?: () => void;
   onChangeInputText?: (text: string) => void;
-  positionStyle?: ViewStyle;
+  style?: ViewStyle;
 };
 
-const mapActionToIcon = (action: Actions): string => {
+const mapActionToIcon = (action: Actions): ImageSourcePropType => {
   switch (action) {
     case 'find': return Assets.icons.search_white;
     case 'search': return Assets.icons.search_white;
@@ -60,7 +60,7 @@ const AppBar: React.FC<AppBarProps> = ({
   onPress,
   onPressInput,
   onChangeInputText,
-  positionStyle,
+  style,
 }) => {
   const [isEditing, setIsEditing] = useState(inputSearch);
 
@@ -90,8 +90,7 @@ const AppBar: React.FC<AppBarProps> = ({
       style={[
         viewStyle.container_row_between,
         {
-          ...positionStyle,
-          backgroundColor: colors.primary,
+          ...style,
           height: 55,
           paddingHorizontal: 10,
        
@@ -127,8 +126,9 @@ const AppBar: React.FC<AppBarProps> = ({
         </TouchableOpacity>
       ) : (
         <View style={[viewStyle.container, {alignItems: 'flex-start', marginLeft: 10}]}>
-          <Text style={[textStyle.titleText,]}>{title}</Text>
-          <Text style={{ opacity: 0.8, fontFamily: Fonts.roboto.regular, color: 'white', fontSize: 10 }}>{description}</Text>
+          <Text style={[textStyle.titleText,{fontSize : description ? 12 :  15}]}>{title}</Text>
+          {description && <Text style={{ opacity: 0.8, fontFamily: Fonts.roboto.regular, color: 'white', fontSize: 10 }}>{description}</Text>
+        }
         </View>
       )}
 

@@ -1,7 +1,7 @@
 import { View, Text } from 'react-native'
 import React from 'react'
 import { useNavigation } from '@react-navigation/native';
-import { MainNavProp } from '../../routers/type';
+import { MainNavProp } from '../../routers/types';
 import AppBar from '../../components/Common/AppBar';
 
 const SearchScreen = () => {

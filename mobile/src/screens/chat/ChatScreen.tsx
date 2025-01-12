@@ -12,7 +12,7 @@ import {
   Pressable,
 } from 'react-native';
 import {RouteProp, useNavigation} from '@react-navigation/native';
-import {MainNavProp, MainStackParamList} from '../../routers/type';
+import {MainNavProp, MainStackParamList} from '../../routers/types';
 import {colors} from '../../styles/Ui/colors';
 import {Assets} from '../../styles/Ui/assets';
 import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
@@ -291,6 +291,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({route}) => {
               break;
           }
         }}
+        style={{backgroundColor: colors.primary}}
       />
 
       {/* Content */}

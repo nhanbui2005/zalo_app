@@ -1,5 +1,5 @@
-const uriIcons = '../../../assets/icons/';
-const images = '../../../assets/images/';
+const uriIcons = '../../assets/icons/';
+const images = '../../assets/images/';
 
 export const Assets = {
     icons: {

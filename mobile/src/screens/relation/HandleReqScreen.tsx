@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import {
   View,
@@ -12,27 +13,24 @@ import {
 import {MainNavProp } from '~/routers/types';
 import { useNavigation } from '@react-navigation/native';
 import { textStyle } from '../../styles/Ui/text';
-import FriendTab from './tab/FriendTab';
 import { colors } from '../../styles/Ui/colors';
 import AppBar from '../../components/Common/AppBar';
 import { WINDOW_WIDTH } from '../../utils/Ui/dimensions';
 import { Fonts } from '~/styles/Ui/fonts';
 
 const tabs = [
-  { id: 0, label: 'Bạn bè', content: <FriendTab /> },
-  { id: 1, label: 'Nhóm', content: 'Nội dung Tab 2' },
-  { id: 2, label: 'QA', content: 'Nội dung Tab 3' },
+  { id: 0, label: 'Đã nhận', content: 'aaaaaaaa'},
+  { id: 1, label: 'Đã gủi', content: 'Nội dung Tab 2' },
+ 
 ];
 
-const ContactsScreen = () => {
+const HandleReqScreen = () => {
   const mainNav = useNavigation<MainNavProp>();
   
   const [activeTab, setActiveTab] = useState(0);
 
   const tabsPosition = useRef(new Animated.Value(0)).current; 
   const underlinePosition = useRef(new Animated.Value(0)).current; 
-  const lastScrollY = useRef(0);
-  const isAnimating = useRef(false); 
 
   const handleTabPress = (index: number) => {
     setActiveTab(index);
@@ -41,36 +39,6 @@ const ContactsScreen = () => {
       useNativeDriver: true,
       duration: 200,
     }).start();
-  };
-
-  // Hàm xử lý cuộn trang
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const { y } = event.nativeEvent.contentOffset;
-
-    if (isAnimating.current) return; 
-
-    let newPosition
-    if (y === 0) {
-      newPosition = 0;
-    } else if (y > 60) {
-      newPosition = y > lastScrollY.current ? -50 : 0;
-    }
-  
-    
-    // Nếu vị trí thay đổi, thực hiện animation
-    if (newPosition !== tabsPosition._value) { 
-      isAnimating.current = true;
-
-      Animated.timing(tabsPosition, {
-        toValue: newPosition || 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => {
-        isAnimating.current = false; 
-      });
-    }
-
-    lastScrollY.current = y;
   };
 
   return (
@@ -82,7 +50,7 @@ const ContactsScreen = () => {
         onPressInput={() => mainNav.navigate('SearchScreen')}
         onPress={() =>     mainNav.navigate('AddFriendScreen')}
         style={{
-          backgroundColor: colors.primary,
+          backgroundColor: colors.secondary_transparent,
           position: 'absolute',
           top: 0,
           left: 0,
@@ -104,7 +72,6 @@ const ContactsScreen = () => {
             >
               <Text
                 style={[
-                
                   activeTab === tab.id && styles.activeText,
                 ]}
               >
@@ -123,26 +90,18 @@ const ContactsScreen = () => {
           />
         </Animated.View>
 
-        {/* Content */}
-        <ScrollView
-          style={{ backgroundColor: 'red' }}
-          onScroll={handleScroll}
-          scrollEventThrottle={16} // Điều chỉnh độ mượt của sự kiện scroll
-        >
-          {tabs[activeTab]?.content}
-        </ScrollView>
       </View>
     </View>
   );
 };
 
-export default ContactsScreen;
+export default HandleReqScreen;
 
 const styles = StyleSheet.create({
   tabContainer: {
     marginTop: 55,
     flexDirection: 'row',
-    borderBottomWidth: 1.5,
+    borderBottomWidth: 1,
     borderColor: colors.gray_light,
     position: 'absolute',
     top: 0,
@@ -158,14 +117,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   activeText: {
-    fontWeight: 'bold',
-    fontFamily: Fonts.roboto.regular,
+    ...textStyle.body_md,
     color: colors.primary,
   },
   underline: {
     position: 'absolute',
     bottom: -1,
-    height: 2,
+    height: 1,
     backgroundColor: colors.primary,
   },
 });

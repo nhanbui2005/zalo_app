@@ -9,5 +9,8 @@ export const Fonts = {
     proximaNova: {
       regular: 'proximanova_regular',
     },
+    NotoSans: {
+      regular: 'NotoSans-Regular',
+    },
   };
   

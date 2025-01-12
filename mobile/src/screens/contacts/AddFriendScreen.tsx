@@ -1,10 +1,35 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity } from "react-native";
 import { Assets } from "../../styles/Ui/assets";
 import { colors } from "../../styles/Ui/colors";
 import { iconSize } from "../../styles/Ui/icons";
+import { userApi } from "~/features/user/userService";
+import { useNavigation } from "@react-navigation/native";
+import { MainNavProp } from "~/routers/types";
+import { ProfileOptions, ProfilePersonalPagram } from "~/routers/main/mainPagramTypes";
 
 const AddFriendScreen = () => {
+
+  const mainNav = useNavigation<MainNavProp>();
+
+  const [email, setEmail] = useState('')
+  
+  const handleSenReq = () => {    
+    userApi.searchUserByEmail(email)
+      .then(data => {        
+        const pagram: ProfilePersonalPagram = { ...data, options: ProfileOptions.NotFriend }; 
+  
+        mainNav.navigate('ProfilePersonalScreen', {profile: pagram});
+        
+        setEmail('');
+      })
+      .catch(error => {
+        console.error('Error in handleSenReq:', error);
+      });
+  };
+  
+  
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -27,14 +52,16 @@ const AddFriendScreen = () => {
 
       {/* Input số điện thoại */}
       <View style={styles.inputContainer}>
-        <Text style={styles.inputPrefix}>+84</Text>
         <TextInput
+          value={email}
+          onChangeText={(text)=>setEmail(text)}
           style={styles.input}
-          placeholder="Nhập số điện thoại"
-          keyboardType="phone-pad"
+          keyboardType="email-address"
+          placeholder="Email"
+          placeholderTextColor={colors.gray}
         />
-        <TouchableOpacity style={styles.sendButton}>
-        <Image style={iconSize.medium} source={Assets.icons.birth_white}/>
+        <TouchableOpacity style={styles.sendButton} onPress={handleSenReq}>
+          <Image style={iconSize.medium} source={Assets.icons.birth_white}/>
         </TouchableOpacity>
       </View>
 

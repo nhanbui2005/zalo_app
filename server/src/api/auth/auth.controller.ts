@@ -30,7 +30,6 @@ export class AuthController {
 @Post('google-mobile')
 async googleLoginMobile(@Body() dto: LoginWithGoogleReqMobileDto) {
   const {idToken} = dto
-  console.log('idToken',idToken);
   
   const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -54,7 +53,7 @@ async googleLoginMobile(@Body() dto: LoginWithGoogleReqMobileDto) {
 
 
   @ApiPublic()
-  @Get('google-web')
+  @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
   }

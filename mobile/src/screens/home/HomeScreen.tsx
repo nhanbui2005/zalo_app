@@ -1,9 +1,15 @@
-import React from 'react';
-import { View, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { View, FlatList, TouchableOpacity, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { MainNavProp } from '../../routers/type';
+import { MainNavProp } from '../../routers/types';
 import ItemChatHome, { Discription } from './components/ItemChatHome';
 import AppBar from '../../components/Common/AppBar';
+import { colors } from '~/styles/Ui/colors';
+import SimpleModal from '~/components/Common/modal/SimpleModal';
+import Toast from '~/components/Common/toast/SimpleToast';
+import { Fonts } from '~/styles/Ui/fonts';
+import styles from '~/styles/components/AppBar.styles';
+import { textStyle } from '~/styles/Ui/text';
 
 const HomeScreen = () => {
   const mainNav = useNavigation<MainNavProp>();
@@ -60,6 +66,7 @@ const HomeScreen = () => {
               break;
           }
         }}
+        style={{backgroundColor: colors.primary}}
       />
 
       {/* Danh sách chat */}
