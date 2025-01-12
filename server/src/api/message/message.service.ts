@@ -42,20 +42,23 @@ export class MessageService {
   async sendMessage(dto: SendMessageReqDto, senderId: Uuid): Promise<MessageResDto> {
     const { roomId, receiverId, content, contentType } = dto;
     
-    let room = await this.chatRoomRepository
-      .createQueryBuilder('chatRoom')
-      .select([
-        'chatRoom.id',
-      ])
-      .leftJoin('chatRoom.members', 'members')
-      .addSelect(['members.id','members.userId']) 
-      .where('chatRoom.id = :roomId', { roomId })
-      .getOne();
-
+    let room = null
+    if (roomId) {
+      room = await this.chatRoomRepository
+        .createQueryBuilder('chatRoom')
+        .select([
+          'chatRoom.id',
+        ])
+        .leftJoin('chatRoom.members', 'members')
+        .addSelect(['members.id','members.userId']) 
+        .where('chatRoom.id = :roomId', { roomId })
+        .getOne();
+    }
+    
     let memberSent: MemberEntity;
   
     if (!room) {
-      // Nếu không tồn tại room, tạo mới
+      // Nếu không tồn tại room, tạo mới      
       room = await this.createChatRoom(senderId, receiverId);
       await this.chatRoomRepository.save(room);
     }
@@ -78,7 +81,7 @@ export class MessageService {
           'user.username',
           'user.avatarUrl',
         ])
-        .where('member.roomId = :roomId', { roomId })
+        .where('member.roomId = :roomId', { roomId: room.id })
         .andWhere('member.userId = :userId', { userId: senderId })
         .getOne();
     }
@@ -93,7 +96,7 @@ export class MessageService {
       roomId: room.id,
       content,
       type: contentType,
-      status: MessageViewStatus.RECEIVED,
+      status: MessageViewStatus.SENT,
       createdBy: senderId,
       updatedBy: senderId,
     });
@@ -189,6 +192,8 @@ export class MessageService {
       createdBy: senderId,
       updatedBy: senderId,
     });
+
+    await room.save()
   
     const member1 = new MemberEntity({
       userId: senderId,

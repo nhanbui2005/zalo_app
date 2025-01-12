@@ -1,4 +1,6 @@
 import { useState } from "react"
+import FriendInviteTab from "./FriendInviteTab"
+import FriendListTab from "./FriendListTab"
 
 const menus = [
   'Danh sách bạn bè',
@@ -6,40 +8,41 @@ const menus = [
   'Lời mời kết bạn',
   'Lời mời vào nhóm và cộng đồng',
 ]
-// const ItemMenuContact = ({ text, onClick, isActive }) => {
-//   return (
-//     <div className={`p-4 hover:bg-slate-500  ${isActive && 'bg-slate-700'}`} onClick={() => onClick()}>
-//       <p className="text-lg font-semibold text-white">{text}</p>
-//     </div>
-//   )
-// }
+const ItemMenuContact = ({ text, onClick, isActive }) => {
+  return (
+    <div className={`p-4 hover:bg-slate-500  ${isActive && 'bg-slate-700'}`} onClick={() => onClick()}>
+      <p className="text-lg font-semibold text-white">{text}</p>
+    </div>
+  )
+}
 
 export default function ContactPage() {
   const [activeItem, setActiveItem] = useState(menus[0])
-  // const getContent = () => {
-  //   if (activeItem == menus[0]) {
-  //     return <FriendListTab/>
-  //   }else if (activeItem == menus[2]) {
-  //     return <FriendInviteTab/>
-  //   }
-  // }
+  const getContent = () => {
+    if (activeItem == menus[0]) {
+      return <FriendListTab/>
+    }else if (activeItem == menus[2]) {
+      return <FriendInviteTab/>
+    }
+  }
   return (
     <div className="flex size-full flex-row bg-dark-2">
       <div className="flex w-[28rem] flex-col flex-grow bg-dark-3">
-        {/* {menus.map((item) => (
+        {menus.map((item, index) => (
           <ItemMenuContact
+            key={index}
             isActive={activeItem == item}
             text={item}
             onClick={() => setActiveItem(item)}
           />
-        ))} */}
+        ))}
       </div>
 
       {/* nội dung */}
       <div className="flex w-full flex-row">
-        {/* {
+        {
           getContent()
-        } */}
+        }
       </div>
     </div>
   )

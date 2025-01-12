@@ -1,9 +1,10 @@
 import relationAPI from "../../service/relationAPI"
 
 export const InviteFriendCard = ({
-  data
+  data,
+  onHandle
 }) => {
-  const {partner, sentBy, status, id} = data
+  const {user, inviter, status, id} = data
 
   const onHandleRquest = async (action) => {
     try {
@@ -11,6 +12,7 @@ export const InviteFriendCard = ({
         relationId: id,
         action: action
       })
+      onHandle(action)
     } catch (error) {
       
     }
@@ -20,13 +22,13 @@ export const InviteFriendCard = ({
       <div className="flex flex-row gap-2 mb-4">
         <img 
           className="size-10  rounded-lg"
-          src={partner?.avatarUrl}
+          src={user?.avatarUrl}
         />
-        <p className="text-white">{partner?.username}</p>
-      </div>
+        <p className="text-white">{user?.username}</p>
+      </div>  
 
       {status === 'pending' &&
-        (sentBy === 'me' ? 
+        (inviter === 'self' ? 
           <button onClick={()=> onHandleRquest('revoke')} className="bg-dark-4 hover:bg-dark-5 text-white p-2 rounded-sm w-full">Thu hồi lời mời</button> :
           <div>
             <div className="flex flex-row gap-2">

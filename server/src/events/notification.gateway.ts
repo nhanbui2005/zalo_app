@@ -1,41 +1,53 @@
 import { EventEmitterKey } from '@/constants/event-emitter.constant';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, UseGuards } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { WebSocketGateway, WebSocketServer, SubscribeMessage, ConnectedSocket, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import { WebSocketGateway, WebSocketServer, SubscribeMessage, ConnectedSocket, OnGatewayConnection, OnGatewayDisconnect, WsException } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Cache } from 'cache-manager';
+import { AuthService } from '@/api/auth/auth.service';
+import { JwtPayloadType } from '@/api/auth/types/jwt-payload.type';
 
 @Injectable()
 @WebSocketGateway({
   cors: {
     origin: 'http://localhost:5173', // Địa chỉ ReactJS hoặc client của bạn
-    credentials: true,              // Cho phép gửi cookie nếu cần
+    credentials: true,         
+    allowedHeaders: ["Custom-Header", "Authorization"],     // Cho phép gửi cookie nếu cần
   },
 }) // Không namespace để áp dụng toàn cục
 export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
+    private readonly authService: AuthService,
   ){}
 
   @WebSocketServer()
   server: Server;
 
   async handleConnection(@ConnectedSocket() client: Socket) {
-    console.log('connected');
-
-    //lưu user đã online
-   // await this.cacheManager.set('a',client.id)
-    this.server.emit('connected',`Hello ${client.id}`)
+    try {
+      const accessToken = this.extractTokenFromHeader(client)       
+      const user: JwtPayloadType = await this.authService.verifyAccessToken(accessToken)
+      this.cacheManager.set(`connected:${user.id}`,user.id)
+    } catch (error) {
+      this.server.emit('error','hihi') 
+    }
   }
 
   async handleDisconnect(@ConnectedSocket() client: Socket) {
-    console.log('disconected');
+    try {
+      const accessToken = this.extractTokenFromHeader(client)
+      const user: JwtPayloadType = await this.authService.verifyAccessToken(accessToken)    
+      this.cacheManager.del(`connected:${user.id}`)
+    } catch (error) {
+      this.server.emit('error','hihi')
+    }
   }
 
   @OnEvent(EventEmitterKey.SENT_REQUEST_ADD_FRIEND)
-  sendNotificationSentRequestAddFriend(data: any) {    
+  sendNotificationSentRequestAddFriend(data: any) {
     const {to, payload} = data
     this.server.emit(to, payload);
   }
@@ -49,5 +61,11 @@ export class NotificationGateway implements OnGatewayConnection, OnGatewayDiscon
   @SubscribeMessage('requestNotification')
   handleRequestNotification(client: any, payload: any) {
     client.emit('notification', { message: 'Your notification request is processed.' });
+  }
+
+  private extractTokenFromHeader(request: Socket): string | undefined {
+    const accessToken = request.handshake.auth.token || request.handshake.headers.authorization
+    const [type, token] = accessToken.trim()?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
   }
 }

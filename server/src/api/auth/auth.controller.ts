@@ -13,6 +13,8 @@ import { VerifyForgotPasswordReqDto } from './dto/verify-fogot-password.req.dto 
 import { ChangePasswordReqDto } from './dto/change-password.req.dto';
 import { Uuid } from '@/common/types/common.type';
 import { JwtPayloadType } from './types/jwt-payload.type';
+import { RefreshResDto } from './dto/refresh.res.dto';
+import { RefreshReqDto } from './dto/refresh.req.dto';
 
 @ApiTags('auth')
 @Controller({
@@ -116,14 +118,14 @@ export class AuthController {
     await this.authService.logout(userToken);
   }
 
-  // @ApiPublic({
-  //   type: RefreshResDto,
-  //   summary: 'Refresh token',
-  // })
-  // @Post('refresh')
-  // async refresh(@Body() dto: RefreshReqDto): Promise<RefreshResDto> {
-  //   return await this.authService.refreshToken(dto);
-  // }
+  @ApiPublic({
+    type: RefreshResDto,
+    summary: 'Refresh token',
+  })
+  @Post('refresh')
+  async refresh(@Body() dto: RefreshReqDto): Promise<RefreshResDto> {
+    return await this.authService.refreshToken(dto);
+  }
 
   // @ApiPublic()
   // @Post('forgot-password')

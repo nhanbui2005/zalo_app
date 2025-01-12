@@ -68,12 +68,13 @@ export default function HomeLayout({ children }) {
       {/* thanh taskbar */}
       {/* {user.accessToken} */}
       <div className="flex w-16 flex-col bg-dark-1 px-2 py-3">
-        <img className="rounded-full" src={avatarUrl} alt="Placeholder" />
+        <img className="rounded-full" src={avatarUrl} />
 
         {/* menu */}
         <div className="mt-8 h-full">
-          {menu.map((item) => (
+          {menu && menu.map((item) => (
             <TaskBarMenuButton
+              key={item.id}
               onClick={() => setActiveItem(item)}
               isActive={item.id === activeItem.id}
               imgActive={item.iconActive}

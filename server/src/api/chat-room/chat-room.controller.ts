@@ -4,7 +4,6 @@ import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { ListRoomReqDto } from './dto/list-room.req.dto';
-import { ApiAuth } from '@/decorators/http.decorators';
 import { CurrentUser } from '@/decorators/current-user.decorator';
 import { Uuid } from '@/common/types/common.type';
 
@@ -27,6 +26,14 @@ export class ChatRoomController {
     @CurrentUser('id') meId: Uuid
   ) {
     return this.chatRoomService.findAll(reqDto, meId);
+  }
+
+  @Get('/partner/:id')
+  findOneByPartnerId(
+    @Param('id') id: Uuid,
+    @CurrentUser('id') meId: Uuid
+  ) {
+    return this.chatRoomService.findOneByPartnerId(meId, id);
   }
 
   @Get(':id')

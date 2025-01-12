@@ -1,7 +1,6 @@
 import AxiosInstant from '../config/axiosInstant'
 
-const getAllRelationsRequestAPI = async (data) => {
-  const {status} = data
+const getAllRelationsRequestAPI = async (status) => {
   try {
     return await AxiosInstant.get(`relations?status=${status}`)
   } catch (error) {

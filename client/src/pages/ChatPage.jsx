@@ -1,294 +1,38 @@
-import { useEffect, useRef, useState } from 'react'
-import { Assets } from '../assets'
-import SquareIcon from '../components/icon/squareIcon'
-import { AddFriendModal } from '../components/modal/AddFriendModal'
-import roomAPI from '../service/roomAPI'
-import messageAPI from '../service/messageAPI'
-import { io } from 'socket.io-client'
-import { useSelector } from 'react-redux'
+import { useState } from 'react'
+import ConversationInfo from './chatPage/ConversationInfo'
+import ConversationList from './chatPage/ConversationList'
+import ConversationContent from './chatPage/ConversationContent'
+import { SocketProvider, useSocket } from '../socket/SocketProvider'
 
-export default function ChatPage() {
-  const [isInputFocus, setIsInputFocus] = useState(false)
-  const [textContent, setTextContent] = useState('')
-  const [messages, setMessages] = useState([])
-  const [isModalOpen, setIsModelOpen] = useState(false)
-  const [conversations, setConversations] = useState([])
+const ChatPage = () => {
   const [currentRoom, setCurrentRoom] = useState()
-  const messagesEndRef = useRef(null)
-  const meId = useSelector((state) => state.me.user?.id)
-
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({
-        behavior: 'smooth',
-      })
-    }
-  }
-  const Search = () => {
-    const [isFocus, setIsFocus] = useState(false)
-
-    return (
-      <div
-        className={`${
-          isFocus && 'outline outline-1 outline-sky-400'
-        } flex w-full flex-row rounded-lg bg-dark-2 px-1`}
-      >
-        <SquareIcon src={Assets.icons.search} />
-        <input
-          onFocus={() => setIsFocus(true)}
-          onBlur={() => setIsFocus(false)}
-          className="search-input w-full bg-dark-2 text-white focus:outline-none"
-          placeholder="Tìm kiếm"
-        />
-      </div>
-    )
-  }
-  const SelectedTab = () => {
-    const items = ['Tất cả', 'Chưa đọc']
-    const [isSelected, setIsSelected] = useState(items[0])
-    return (
-      <div className="flex gap-3">
-        {items.map((item,index) => (
-          <div key={index.toString()} className="" onClick={() => setIsSelected(item)}>
-            <p
-              className={`text-sm font-semibold hover:text-blue-500 ${isSelected === item ? 'text-blue-500' : 'text-slate-400'}`}
-            >
-              {item}
-            </p>
-            {isSelected === item && <div className="h-1 bg-blue-500" />}
-          </div>
-        ))}
-      </div>
-    )
-  }
-  const SendMessage = async (userId, message) => {
-    try {
-      const newMessage = await messageAPI.sentMessage({
-        receiverId: currentRoom.id,
-        roomId: currentRoom.id,
-        content: message,
-        contentType: 'text',
-      })
-      newMessage.isSelfSent = true
-      addNewMessage(newMessage)
-      setTextContent('')
-    } catch (error) {}
-  }
-  const ConversationItem = ({
-    id,
-    avatarUrl,
-    name,
-    lastText,
-    messLasted,
-    onClick,
-  }) => {
-    const [isHover, setIsHover] = useState(false)
-    return (
-      <div
-        className="flex h-20 w-full flex-row items-center p-2 hover:bg-dark-4"
-        onMouseEnter={() => setIsHover(true)}
-        onMouseLeave={() => setIsHover(false)}
-        onClick={() => onClick(id)}
-      >
-        <img
-          className="size-12 rounded-full"
-          src={avatarUrl}
-          alt="Placeholder"
-        />
-        <div className="mx-2 flex w-full flex-col gap-1 py-1">
-          <div className="flex flex-row justify-between">
-            <p className="text-base text-white">{name}</p>
-            {isHover ? (
-              <SquareIcon className={'size-6'} src={Assets.icons.more} />
-            ) : (
-              <p className="text-sm text-slate-400">{messLasted}</p>
-            )}
-          </div>
-          <p className="text-slate-400">{lastText}</p>
-        </div>
-      </div>
-    )
-  }
-  const MessageItem = ({ data }) => {
-    const { content, type, status, sender, isSelfSent, createdAt } = data
-    return (
-      <div className={`my-10 flex ${isSelfSent && 'flex-row-reverse'}`}>
-        <img
-          className="size-8 rounded-full"
-          src={sender.user.avatarUrl}
-          alt="Placeholder"
-        />
-        <p className="max-w-80 break-words text-white">{isSelfSent}</p>
-        <div
-          className={`rounded bg-slate-500 p-2 ${!isSelfSent ? 'ml-2' : 'mr-2'}`}
-        >
-          <p className="max-w-80 break-words">{content}</p>
-        </div>
-      </div>
-    )
-  }
-  const addNewMessage = (newMessage) => {
-    setMessages((prevMessages) => [newMessage, ...prevMessages])
-    scrollToBottom()
-  }
-
-  useEffect(() => {
-    // Kết nối đến server
-    const socket = io('http://localhost:7777/message', {
-      transports: ['websocket'], // Ép buộc sử dụng WebSocket
-    })
-
-    // Lắng nghe sự kiện "connected"
-    socket.on('connected', (data) => {
-      console.log('message', data)
-    })
-
-    // Lắng nghe sự kiện "newMessage"
-    socket.on(`event:notify:${meId}:new_message`, (data) => {
-      setMessages((prevMessages) => [data, ...prevMessages])
-    })
-
-    // Dọn dẹp kết nối khi component bị hủy
-    return () => {
-      socket.disconnect()
-    }
-  }, [])
-
-  const onItemRoomClick = (id) => {}
-
-  const fetchConversations = async () => {
-    const data = await roomAPI.getAllRoomAPI()
-    setConversations(data.data)
-    setCurrentRoom(data.data[0])
-  }
-
-  const fetchLoadMoreMessages = async () => {
-    const data = await messageAPI.loadMoreMessage({
-      roomId: currentRoom.id,
-    })
-    setMessages(data.data)
-  }
-
-  useEffect(() => {
-    fetchConversations()
-  }, [])
-
-  useEffect(() => {
-    if (currentRoom) {
-      fetchLoadMoreMessages()
-    }
-  }, [currentRoom])
-
+  // const { emit } = useSocket();
+  
   return (
-    <div className="flex size-full flex-row bg-dark-2">
-      {/* danh sách hội thoại */}
-      <div className="flex w-[28rem] flex-col">
-        {/* header */}
-        <div className="mb-0.5 flex h-28 flex-col justify-between bg-dark-3 px-4 pt-4">
-          <div className="flex flex-row">
-            <Search />
-            <SquareIcon
-              onClick={() => setIsModelOpen(true)}
-              src={Assets.icons.addFriend}
-              className={'mx-1'}
-            />
-            <SquareIcon src={Assets.icons.addGroup} />
-            <AddFriendModal isOpen={isModalOpen} setIsOpen={setIsModelOpen} />
-          </div>
-          <SelectedTab />
-        </div>
-        {/* content */}
-        <div className="flex-grow bg-dark-3">
-          {conversations.map((item, index) => (
-            <ConversationItem
-              key={index.toString()}
-              avatarUrl={item.roomAvatarUrl}
-              name={item.roomName}
-              lastText={'hello'}
-              messLasted={'1h trước'}
-              onClick={onItemRoomClick}
-            />
-          ))}
-        </div>
+    // <SocketProvider namespace={"notifications"}>
+      <div className="flex size-full flex-row bg-dark-2"><SocketProvider namespace={"message"}>
+        {/* danh sách hội thoại */}
+        <ConversationList setCurrentConversation={(it)=>setCurrentRoom(it)}/>
+        {/* nội dung */}
+        <div className="flex w-full flex-row">
+          {/* hội thoại */}
+          {
+            currentRoom &&
+            
+              <ConversationContent
+                avatarUrl={currentRoom?.roomAvatarUrl}
+                name={currentRoom?.roomName}
+                type={currentRoom?.type}
+                roomId={currentRoom?.id}
+              />
+            
+          }
+          {/* thông tin hội thoại*/}
+          <ConversationInfo/>
+        </div></SocketProvider>
       </div>
-
-      {/* nội dung */}
-      <div className="flex w-full flex-row">
-        {/* hội thoại */}
-        <div className="mx-0.5 flex w-full flex-col">
-          {/* header */}
-          <div className="flex h-20 flex-row items-center bg-dark-3 p-4">
-            <div className="flex w-full flex-row items-center">
-              <img
-                className="size-12 rounded-full"
-                src={currentRoom?.roomAvatarUrl}
-                alt="Placeholder"
-              />
-              <div className="mx-3 flex w-full flex-col justify-between py-1">
-                <p className="text-lg font-bold text-cyan-50">
-                  {currentRoom?.roomName}
-                </p>
-                <p className="text-sm text-slate-400">Truy cập 1 giờ trước</p>
-              </div>
-            </div>
-            <SquareIcon src={Assets.icons.call} />
-            <SquareIcon src={Assets.icons.videoCall} />
-            <SquareIcon src={Assets.icons.addGroup} />
-          </div>
-          {/* nội dung hội thoại */}
-          <div className="h-full overflow-auto p-8 scrollbar-hide">
-            {[...messages].reverse().map((item, index) => (
-              <MessageItem key={index.toString()} data={item} />
-            ))}
-            <div ref={messagesEndRef} className='h-5 w-full'/> {/* Placeholder để cuộn tới */}
-          </div>
-          {/* nhập tin nhắn */}
-          <div
-            className={`${isInputFocus ? 'bg-blue-600' : 'bg-dark-2'} mt-0.5 flex flex-col gap-0.5`}
-          >
-            <div className="h-8 w-full bg-dark-3 px-2"></div>
-            <div className="flex h-12 flex-row items-center justify-center bg-dark-3 px-4">
-              <input
-                className="w-full bg-dark-3 text-base text-cyan-50 focus:outline-none"
-                placeholder="Nhập @, tin nhắn..."
-                value={textContent}
-                onChange={(e) => setTextContent(e.target.value)}
-                onFocus={() => setIsInputFocus(true)}
-                onBlur={() => setIsInputFocus(false)}
-              />
-              <img
-                className="size-6"
-                src={
-                  textContent.length > 0 ? Assets.icons.send : Assets.icons.like
-                }
-                onClick={() => {
-                  if (textContent.length > 0) {
-                    SendMessage(2, textContent)
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </div>
-        {/* thông tin hội thoại*/}
-        <div className="flex w-[30rem] flex-col bg-dark-3">
-          <div className="flex h-20 flex-col items-center justify-center bg-dark-3">
-            <p className="text-lg font-bold text-cyan-50">
-              Thông tin hội thoại
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    // </SocketProvider>
   )
 }
-var user1 = {
-  id: 1,
-  name: 'Nguyễn Văn A',
-  image: 'https://via.placeholder.com/150',
-}
-var me = {
-  id: 1,
-  name: 'Nguyễn Văn A',
-  image: 'https://via.placeholder.com/150',
-}
+
+export default ChatPage

@@ -107,33 +107,38 @@ export class RelationService {
   }
 
   async getAllRelations(currentUserId: Uuid, status: RelationStatus) : Promise<any[]>{    
+    console.log(currentUserId);
+    
     const query = this.relationRepository
       .createQueryBuilder('relation')
       .leftJoinAndSelect('relation.requester', 'requester')
       .leftJoinAndSelect('relation.handler', 'handler')
+      // .where(
+      //   '(requester.id = :currentUserId) OR (handler.id = :currentUserId)',
+      //   { currentUserId }
+      // )
       .where(
-        '(relation.requesterId = :currentUserId) OR (relation.handlerId = :currentUserId)',
+        '((requester.id = :currentUserId) OR (handler.id = :currentUserId))',
         { currentUserId }
       )
-      .select([
-        'relation.id',
-        'relation.status',
-        'requester.id',
-        'requester.username',
-        'requester.avatarUrl',
-        'handler.id',
-        'handler.username',
-        'handler.avatarUrl',
-      ])
 
-    if (status) {
-      query.where(
-        'relation.status = :status',
-        {status}
-      )
+    if (status) {      
+      query.andWhere('relation.status = :status',{status})
     }
+    query.select([
+      'relation.id',
+      'relation.status',
+      'requester.id',
+      'requester.username',
+      'requester.avatarUrl',
+      'handler.id',
+      'handler.username',
+      'handler.avatarUrl',
+    ])
 
-    const relations = await query.getMany()
+    const relations = await query.getMany()    
+    console.log('realtions',relations);
+    
 
     const result = relations.map(item => {
       return {

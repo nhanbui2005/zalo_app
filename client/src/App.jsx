@@ -8,13 +8,17 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useEffect } from 'react'
 import { getMe } from './redux/slices/userSlice'
 import HomeLayout from './layouts/HomeLayout'
-import { io } from 'socket.io-client';
+import { SocketProvider, useSocket } from './socket/SocketProvider'
 
 export default function App() {
   const dispatch = useDispatch()
   const accessToken = useSelector((state) => state.me.auth.accessToken)
   const email = useSelector((state) => state.me.user?.email)
   const meId = useSelector((state) => state.me.user?.id)
+  const { emit } = useSocket();
+
+  console.log('cccccccccccccc');
+  
 
   // useEffect(() => {
   //   // Kết nối đến server
@@ -71,7 +75,9 @@ export default function App() {
         element={
           <PrivateRoute>
             <HomeLayout>
-              <ChatPage></ChatPage>
+              {/* <SocketProvider namespace={"notifications"}> */}
+                <ChatPage/>
+              {/* </SocketProvider> */}
             </HomeLayout>
           </PrivateRoute>
         }

@@ -30,6 +30,8 @@ import { GlobalExceptionFilter } from './filters/global-exception.filter';
 import { AuthGuard } from './guards/auth.guard';
 import setupSwagger from './utils/setup-swagger';
 import { RolesGuard } from './guards/roles.guard';
+import { WsGuard } from './guards/ws.guard';
+import { WsAdapter } from './WsAdapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {bufferLogs: true});
@@ -65,7 +67,13 @@ async function bootstrap() {
     prefix:'v'
   });
 
-  app.useGlobalGuards(new AuthGuard(reflector, app.get(AuthService)), new RolesGuard(reflector));
+  app.useGlobalGuards(
+    new AuthGuard(reflector, app.get(AuthService)),
+    new RolesGuard(reflector),
+    // new WsGuard(reflector, app.get(AuthService))
+  );
+  // app.useWebSocketAdapter(new WsAdapter(app.get(AuthService)));
+  // app.useWebSocketAdapter(new WsGuard(reflector, app.get(AuthService)));
   app.useGlobalFilters(new GlobalExceptionFilter(configService));
   app.useGlobalPipes(
     new ValidationPipe({

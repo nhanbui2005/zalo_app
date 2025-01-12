@@ -6,59 +6,116 @@ import {
   OnGatewayDisconnect,
   ConnectedSocket,
   WsException,
+  SubscribeMessage,
+  MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from '../auth/auth.service';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitterKey } from '@/constants/event-emitter.constant';
 import { createEventKey } from '@/utils/socket.util';
 import { EventKey } from '@/constants/event.constants';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { JwtPayloadType } from '../auth/types/jwt-payload.type';
 
 @Injectable()
 @WebSocketGateway({ namespace: '/message' })
-export class MessageGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class MessageGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
   constructor(
     private readonly authService: AuthService,
     @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>
+    private readonly userRepository: Repository<UserEntity>,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async handleConnection(@ConnectedSocket() client: Socket) {
-    //lưu user đã online
-   // await this.cacheManager.set('a',client.id)
-    this.server.emit('connected',`Hello3 ${client.id}`)
+    // try {
+    //   const accessToken = this.extractTokenFromHeader(client);
+    //   const user: JwtPayloadType =
+    //     await this.authService.verifyAccessToken(accessToken);
+    //   this.cacheManager.set(`connected:${user.id}`, user.id);
+    // } catch (error) {
+    //   this.server.emit('error', 'hihi');
+    // }
   }
 
-  async handleDisconnect(@ConnectedSocket() client: Socket) {
-  
+  async handleDisconnect(@ConnectedSocket() client: Socket) {}
+
+  @SubscribeMessage('join-room')
+  async handleJoinRoom(
+    @MessageBody() data: { roomId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    client.join(data.roomId);
+    // Gửi thông báo đến tất cả các client khác trong room
+    client.to(data.roomId).emit('user-joined', { clientId: client.id });
+  }
+
+  @SubscribeMessage('writing-message')
+  async handleClientMessage(
+    @MessageBody() data: any,
+    @ConnectedSocket() client: Socket,
+  ) {
+    client.broadcast.emit(
+      createEventKey(EventKey.WRITING_MESSAGE, data.roomId),
+      { status: data.status },
+    );
   }
 
   @OnEvent(EventEmitterKey.NEW_MESSAGE)
   async newMessage(data: any) {
-    console.log('dô',data);
-    
-    const { members } = data
+    const { members } = data;
 
-    await Promise.all(await members.map( async (member) => {
-      this.server.emit(
-        createEventKey(EventKey.NEW_MESSAGE, member.userId),
-        data
-      )
-    }))
+    //gửi tin nhắn tới tất cả user (chưa sử dụng room)
+    await Promise.all(
+      await members.map(async (member) => {
+        this.server.emit(
+          createEventKey(EventKey.NEW_MESSAGE, member.userId),
+          data,
+        );
+      }),
+    );
 
     //check clients online or offline
-    let onlineClients = []
-    let offineClients = []
+    // let onlineClients = []
+    // let offineClients = []
+
+    // await Promise.all(await members.map( async (member) => {
+    //   const userId = await this.cacheManager.get(`connected:${member.userId}`)
+    //   if (userId) {
+    //     onlineClients.push(member.userId)
+    //   }else{
+    //     offineClients.push(member.userId)
+    //   }
+    // }))
+
+    // if (onlineClients.length > 0) {
+    //   this.server.emit(
+    //     createEventKey(EventKey.NEW_MESSAGE, member.userId),
+    //     data
+    //   )
+    // }
+
     //handle here...
 
     //hadle online clients...
 
     //hadle offine clients...
+    
+  }
+  private extractTokenFromHeader(request: Socket): string | undefined {
+    const accessToken = request.handshake.auth.token || request.handshake.headers.authorization
+    const [type, token] = accessToken.trim()?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
   }
 }
