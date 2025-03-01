@@ -1,5 +1,0 @@
-
-const AUTH_ASYNC_STORAGE_KEY = 'auth-key';
-const ME_ASYNC_STORAGE_KEY = 'me-key';
-
-export {AUTH_ASYNC_STORAGE_KEY, ME_ASYNC_STORAGE_KEY};
