@@ -13,6 +13,7 @@ import ContactLayout from "../layouts/ContactLayout"
 import FriendListTab from "../pages/ContactPage/FriendListTab"
 import FriendInviteTab from "../pages/ContactPage/FriendInviteTab"
 import ConversationContent from "../pages/chatPage/ConversationContent"
+import { SocketProvider } from "../socket/SocketProvider"
 
 export const AppRoutes = () => {  
   console.log('app-re-render');
@@ -23,9 +24,15 @@ export const AppRoutes = () => {
         <Route element={<PublicRoute />}>
           <Route path="/" element={<AuthPage />} />
         </Route>
+        
 
         <Route element={<PrivateRoute />}>
-          <Route path="/" element={<HomeLayout />}>
+          <Route path="/"
+           element={
+            <SocketProvider namespace={'messages'}>
+              <HomeLayout />
+            </SocketProvider>
+          }>
             <Route path="messages" element={<ChatPage />} >
               <Route path="" element={<div>Hãy bắt đầu trò chuyện</div>}/>
               <Route path=":id" element={<ConversationContent/>}/>

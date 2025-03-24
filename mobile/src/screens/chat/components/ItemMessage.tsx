@@ -17,6 +17,7 @@ import { MessageContentType, MessageViewStatus } from '~/features/message/dto/me
 import { _MessageSentReq, _MessageSentRes } from '~/features/message/dto/message.dto.parent';
 import { Fonts } from '~/styles/Ui/fonts';
 import { MessageItemDisplay } from '~/database/types/message.type';
+import { useRoomStore } from '~/stores/zustand/room.store';
 
 
 // Định nghĩa interface MessagParente (giả định)
@@ -67,28 +68,21 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
     messageStatus,
   } = message;
 
-  // Logic containerStyle và textStyle
-  const containerStyle = isSelfSent ? styles.meContainer : styles.peopleContainer;
+  const {currentRoom} = useRoomStore()
+  const containerStyle = source == 'system' ? styles.systemContainer : 
+  (isSelfSent ? styles.meContainer : styles.peopleContainer);
+
+  const messageSystemAccetp = (message.content && !message.senderId)
+
   const textStyles = isSelfSent ? styles.meText : styles.peopleText;
 
   const [emojisAnimated, setEmojisAnimated] = useState<
     { id: string; emoji: string }[]
   >([]);
-  const [threeEmojis, setThreeEmojis] = useState<string[]>([]);
   const [emojiCount, setEmojiCount] = useState(0);
   const emojisCountAnimatedValue = useRef(new Animated.Value(0)).current;
   const emojiTimeout = useRef<ReturnType<typeof setTimeout>>();
   const itemRef = useRef<View>(null);
-
-  useEffect(() => {
-    const emojiArray = emojis?.split('_')
-    if (emojiArray && emojiArray.length > 0) {
-      const slicedEmojis = emojiArray
-        .slice(-3)
-        .map((emoji) => emoji.slice(emoji.indexOf('_') + 1));
-      setThreeEmojis(slicedEmojis);
-    }
-  }, [emojis]);
 
   const handleEmojiPress = (emoji: string) => {
     setEmojiCount((prevCount) => prevCount + 1);
@@ -159,7 +153,14 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
     : undefined;
 
   return (
-    <Pressable key={id} ref={itemRef} onLongPress={handleLongPress}>
+    <>
+     {messageSystemAccetp ? 
+      <View style = {[styles.messageAccepct, styles.systemContainer]}>
+        <Image style = {imagesStyle.avatar_small} source={{uri: currentRoom?.roomAvatar}}/>
+        <Text style={textStyle.body_sm}>{currentRoom?.roomName} { message.content}</Text>
+      </View>
+      : 
+      <Pressable key={id} ref={itemRef} onLongPress={handleLongPress}>
       <View
         style={[
           containerStyle,
@@ -267,7 +268,7 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
             {/* Hiển thị danh sách emoji */}
             {emojis && emojis.length > 0 && (
               <Pressable style={styles.emojis}>
-                {threeEmojis.map((emoji, index) => (
+                {emojis.map((emoji, index) => (
                   <Text key={index}>{emoji}</Text>
                 ))}
               </Pressable>
@@ -315,7 +316,9 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
           </Text>
         </View>
       )}
-    </Pressable>
+     </Pressable>
+     }
+    </>
   );
 });
 
@@ -336,6 +339,18 @@ const styles = StyleSheet.create({
     width: 30,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  messageAccepct: {
+    flexDirection: 'row',
+    alignItems: 'center', 
+    backgroundColor: colors.white, 
+    padding: 8, 
+    margin: 50,
+    paddingHorizontal:10,
+    gap: 8,
+    borderRadius: 20,  
+    maxWidth: '90%', 
+    alignSelf: 'flex-start', 
   },
   messageText: {
     ...textStyle.body_md,
@@ -381,6 +396,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'flex-end',
     paddingVertical: 8,
+  },
+  systemContainer: {
+    backgroundColor: colors.white,
+    alignSelf: 'center',
   },
   meText: {
     color: colors.black,

@@ -73,7 +73,7 @@ export default class MessageRepository {
           }
           emojiMap[emoji.messageId].push(emoji.content);
         });
-
+        
         const mappedMessages = messages.map(msg => ({
           id: msg.id,
           content:msg.content,
@@ -127,13 +127,23 @@ export default class MessageRepository {
   
         for (const msg of messages) {
           // Chuẩn hóa createdAt và updatedAt thành số
-          const createdAtNum = msg.createdAt
-            ? new Date(msg.createdAt).getTime()
-            : Date.now();
-          const updatedAtNum = msg.updatedAt
-            ? new Date(msg.updatedAt).getTime()
-            : Date.now();
-  
+         // Kiểm tra và chuẩn hóa thời gian
+          const parseTimestamp = (date: any): number => {
+            if (!date) return Date.now();
+            if (typeof date === 'string') {
+              const parsedDate = new Date(date);
+              return isNaN(parsedDate.getTime()) ? Date.now() : parsedDate.getTime();
+            }
+            if (date instanceof Date) {
+              return isNaN(date.getTime()) ? Date.now() : date.getTime();
+            }
+            return Date.now();
+          };
+
+          // Chuyển đổi thời gian
+          const createdAtNum = parseTimestamp(msg.createdAt);
+          const updatedAtNum = parseTimestamp(msg.updatedAt);
+
           // Kiểm tra tin nhắn đã tồn tại chưa (dùng msg.id để tra cứu trong Map)
           const existingMessage = msg.id ? existingMessagesMap.get(msg.id) : null;
   
@@ -148,7 +158,7 @@ export default class MessageRepository {
                   message.content = msg.content || existingMessage.content || 'aaa';
                   message.senderId = msg.senderId || existingMessage.senderId;
                   message.createdAt = createdAtNum;
-                  message.updatedAt = serverUpdatedAt;
+                  message.updatedAt = updatedAtNum
                   message.type =
                     (msg.type as MessageContentType) || existingMessage.type || MessageContentType.TEXT;
                   message.status =
@@ -171,8 +181,8 @@ export default class MessageRepository {
                 message.content = msg.content || 'aaa';
                 message.roomId = roomId;
                 message.senderId = msg.senderId || nanoid();
-                message.createdAt = createdAtNum;
-                message.updatedAt = updatedAtNum || Date.now();
+                message.createdAt =createdAtNum;
+                message.updatedAt = updatedAtNum
                 message.type = (msg.type as MessageContentType) || MessageContentType.TEXT;
                 message.status = MessageViewStatus.SENDING;
                 message.revoked = msg.revoked || false;
@@ -181,7 +191,6 @@ export default class MessageRepository {
           }
         }
       }
-  
       return preparedMessages;
     } catch (error) {
       console.error('Error preparing messages:', error);
@@ -251,8 +260,9 @@ export default class MessageRepository {
       const messages = await query.fetch();
 
       const limitedMessages = messages.slice(0, limit);
-      
-      const resultMessages: MessageItemView[] = limitedMessages.map(msg => ({        
+
+      const resultMessages: MessageItemView[] = limitedMessages.map(msg => (
+        {        
         id: msg.id,
         content:msg.content,
         type: msg.type as MessageContentType,
@@ -261,8 +271,8 @@ export default class MessageRepository {
         status: msg.status,
         replyMessageId: msg.reply_message_id,
         revoked: msg.revoked,
-        createdAt: new Date(msg.created_at),
-        updatedAt:new Date( msg.updated_at),
+        createdAt: new Date(msg._raw.created_at),
+        updatedAt:new Date( msg._raw.updated_at),
       }));
 
       
@@ -270,8 +280,7 @@ export default class MessageRepository {
        resultMessages[resultMessages.length - 1].createdAt.getTime() : undefined;
       const startCursor = resultMessages.length > 0 ?
        resultMessages[0].createdAt.getTime() : undefined;
- 
-      
+       
       return {
         data: resultMessages,
         pagination: {

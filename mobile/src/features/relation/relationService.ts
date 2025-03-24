@@ -1,3 +1,4 @@
+import 'react-native-get-random-values'; 
 import MessageRepository from "~/database/repositories/MessageRepository";
 import RoomRepository from "~/database/repositories/RoomRepository";
 import { nanoid } from 'nanoid/non-secure';
@@ -35,14 +36,14 @@ export const syncWhenAcceptRequest = async (
       let messageContent: string | undefined;
 
       if (meId === requesterId) {
-        const handlerIsFriend = await isFriend(requesterId);
+        const handlerIsFriend = await isFriend(handlerId);
         if (!handlerIsFriend) {
-          messageContent = 'Vừa kết bạn';
+          messageContent = 'vừa kết bạn';
         }
       } else if (meId === handlerId) {
-        const requesterIsFriend = await isFriend(handlerId);
+        const requesterIsFriend = await isFriend(requesterId);
         if (!requesterIsFriend) {
-          messageContent = 'Đã đồng ý kết bạn';
+          messageContent = 'đã đồng ý kết bạn';
         }
       }
 

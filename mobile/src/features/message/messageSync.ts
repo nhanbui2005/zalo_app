@@ -112,6 +112,7 @@ export async function syncNewMessage(
   messageRepository: MessageRepository,
 ): Promise<void> {
   if (!newMessage) return;
+  console.log(newMessage);
   
   const roomId = newMessage.roomId || `temp-${nanoid}`;
   const messageId = newMessage.id || `temp-${nanoid}`;

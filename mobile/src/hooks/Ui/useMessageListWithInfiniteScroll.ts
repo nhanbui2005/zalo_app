@@ -60,7 +60,8 @@ export const useMessageListWithInfiniteScroll = () => {
         isDisplayAvatar: !message.isSelfSent && array[index + 1]?.isSelfSent,
         isDisplayStatus: message.isSelfSent && index === 0,
         isDisplayTime:
-          index === array.length - 1 || message.type !== MessageContentType.TEXT,
+          message.senderId ? (index === array.length - 1 || message.type !== MessageContentType.TEXT): false,
+
         isDisplayHeart
       };
     });
@@ -155,7 +156,7 @@ export const useMessageListWithInfiniteScroll = () => {
     };
 
     fetchUsersAndMessages();
-  }, [currentRoomId, loadMoreMessages, afterCursor]);
+  }, [currentRoomId]);
 
   return { messages, isLoading, loadMoreMessages, hasMore };
 };

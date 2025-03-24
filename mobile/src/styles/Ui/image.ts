@@ -2,6 +2,11 @@ import { StyleSheet } from "react-native";
 import { colors } from "./colors";
 
   export const imagesStyle = StyleSheet.create({
+    avatar_small: {
+      height: 26,
+      width: 26,
+      borderRadius: 50
+  },
     avatar_35: {
         height: 35,
         width: 35,

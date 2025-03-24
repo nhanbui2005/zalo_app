@@ -6,6 +6,8 @@ import { RoomService } from "~/features/room/roomService";
 interface RoomStore {
   rooms: Room[];
   currentRoomId: string;
+  currentRoom: {roomAvatar: string, roomName: string} | null;
+  setCurrentRoom: (room: {roomAvatar: string, roomName: string}) => void;
   currentPartnerId: string;
   resetCurrentRoomId: (roomId: string) => void;
   resetCurrentPartnerId: (partnerId: string) => void;
@@ -18,6 +20,7 @@ interface RoomStore {
 export const useRoomStore = create<RoomStore>((set) => ({
   rooms: [],
   currentRoomId: "",
+  currentRoom: null,
   currentPartnerId: "",
   unReadMessagesRooms: {},
 
@@ -27,9 +30,9 @@ export const useRoomStore = create<RoomStore>((set) => ({
   resetCurrentPartnerId: (partnerId: string) => {
     set({ currentPartnerId: partnerId });
   },
-
- 
-
+  setCurrentRoom: (room: {roomAvatar: string, roomName: string}) => {
+    set({ currentRoom: room });
+  },
   fetchRooms: async () => {
     const data = await RoomService.getAllRoom();
     if (!data || !Array.isArray(data)) return;

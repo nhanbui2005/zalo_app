@@ -154,37 +154,32 @@ export default class UserRepository {
   }
   async getMapUsersByRoomId(roomId: string): Promise<Map<string, UserModel>> {
     try {
-      // Bước 1: Query bảng members để lấy danh sách user_id thuộc roomId
+      // Bước 1: Lấy danh sách user_id thuộc roomId từ bảng members
       const members = await this.membersCollection
         .query(Q.where('room_id', roomId))
         .fetch();
-
-      // Bước 2: Lấy danh sách user_id từ members
-      const userIds = members
-        .map(member => member.userId)
-        .filter((id): id is string => !!id);
-
+  
+      // Bước 2: Trích xuất userIds từ members và lọc bỏ giá trị không hợp lệ
+      const userIds = members.map(member => member.userId).filter(Boolean);
+  
       if (userIds.length === 0) {
         return new Map<string, UserModel>(); // Trả về Map rỗng nếu không có user
       }
-
-      // Bước 3: Query bảng users để lấy thông tin người dùng, chỉ lấy 3 trường
+  
+      // Bước 3: Lấy danh sách users từ bảng users với các userIds
       const users = await this.usersCollection
-        .query(
-          Q.where('_id', Q.oneOf(userIds)),
-          Q.unsafeSqlQuery('SELECT _id, username, avatar_url FROM users')
-        )
+        .query(Q.where('_id', Q.oneOf(userIds)))
         .fetch();
-
-      // Bước 4: Chuyển thành Map với key là _id
+  
+      // Bước 4: Chuyển danh sách users thành Map với key là _id, chỉ giữ các trường cần thiết
       const usersMap = new Map<string, UserModel>();
       users.forEach(user => {
         usersMap.set(user._id, user);
       });
-
+  
       return usersMap;
     } catch (error) {
-      console.error('Error fetching users by roomId:', error);
+      console.error(`Error fetching users for roomId=${roomId}:`, error);
       throw error;
     }
   }

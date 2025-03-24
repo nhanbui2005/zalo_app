@@ -6,7 +6,7 @@ const sockets: Record<string, Socket> = {};
 export const connectSocket = (namespace: string, accesstoken: string): Socket => {
 
   if (!sockets[namespace]) {   
-    sockets[namespace] = io(`http://192.168.1.10:7777/${namespace}`, {
+    sockets[namespace] = io(`http://192.168.1.6:7777/${namespace}`, {
       transports: ["websocket"],
       auth: {
         token: `Bearer ${accesstoken ?? ""}`,

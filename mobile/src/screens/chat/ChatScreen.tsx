@@ -20,10 +20,8 @@ import ReplyMessageComponent, {
 import StatusChat from './components/bottomSheet/StatusChat';
 import MessageListView from './components/listMessages';
 import RoomRepository from '~/database/repositories/RoomRepository';
-import {database} from '~/database';
 import {Room} from '~/features/room/dto/room.dto.nested';
 import {useRoomStore} from '~/stores/zustand/room.store';
-import {useStateStore} from '~/stores/zustand/state.store';
 
 export type DisplayMessage = _MessageSentRes & {
   isDisplayTime?: boolean;
@@ -36,7 +34,7 @@ const ChatScreen: React.FC = () => {
   const mainNav = useNavigation<MainNavProp>();
 
   const {curentMessageRepling, clearData} = useChatStore();
-  const {currentRoomId, currentPartnerId, resetCurrentRoomId} = useRoomStore();
+  const {currentRoomId, currentPartnerId, resetCurrentRoomId, setCurrentRoom} = useRoomStore();
   const [room, setRoom] = useState<Room>();
   const {emit} = useSocket();
 
@@ -54,10 +52,23 @@ const ChatScreen: React.FC = () => {
         let roomIdTemp: any;
         if (currentRoomId) {
           roomIdTemp = currentRoomId;
+          const roomRepo = new RoomRepository()
+          const roomData = await roomRepo.getRoomById(currentRoomId)
+          if (roomData) {            
+            setRoom(roomData)
+            setCurrentRoom({
+              roomAvatar: roomData.roomAvatar, 
+              roomName: roomData.roomName
+            });
+          }
         } else {
           if (currentPartnerId) {
             const res = await RoomService.findOneByPartnerId(currentPartnerId);
-            setRoom(res);
+            setRoom(res)
+            setCurrentRoom({
+              roomAvatar: res.roomAvatar, 
+              roomName: res.roomName
+            });
             resetCurrentRoomId(res.id);
             roomIdTemp = res.id;
           }
