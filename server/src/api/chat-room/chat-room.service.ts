@@ -15,26 +15,31 @@ import { MessageEntity } from '../message/entities/message.entity';
 import { CreateGroupReqDto } from './dto/create-group.req.dto';
 import { SYSTEM_USER_ID } from '@/constants/app.constant';
 import assert from 'assert';
+import { RedisService } from '@/redis/redis.service';
+import { UserEntity } from '../user/entities/user.entity';
 const fs = require('fs');
 
 @Injectable()
 export class ChatRoomService {
 
   constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(ChatRoomEntity)
     private readonly roomRepository: Repository<ChatRoomEntity>,
     @InjectRepository(MemberEntity)
     private readonly memberRepository: Repository<MemberEntity>,
     @InjectRepository(MessageEntity)
     private readonly messageRepository: Repository<MessageEntity>,
+    private readonly redisService: RedisService,
   ){}
 
   async createGroupRoom(dto: CreateGroupReqDto, meId: Uuid) : Promise<RoomResDto>{
     //create and save new group
     const newRoom = new ChatRoomEntity({
       type: RoomType.GROUP,
-      groupName: dto?.groupName,
-      groupAvatar: dto?.groupAvatar,
+      roomName: dto?.roomName,
+      roomAvatar: dto?.roomAvatar,
       memberLimit: RoomLimit.GROUP,
       createdBy: meId,
       updatedBy: SYSTEM_USER_ID
@@ -63,35 +68,51 @@ export class ChatRoomService {
     return plainToInstance(RoomResDto,newRoom);
   }
 
-  async createPersonalRoom (userId1: Uuid, userId2: Uuid): Promise<RoomResDto> {    
-    // Tạo một room mới
+  async createPersonalRoom(userId: Uuid, myId: Uuid): Promise<RoomResDto> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    // Tạo phòng chat mới với đầy đủ các trường
     const room = new ChatRoomEntity({
       type: RoomType.PERSONAL,
       memberLimit: 2,
-      createdBy: SYSTEM_USER_ID,
-      updatedBy: SYSTEM_USER_ID
-    })
-    const newRoom = await this.roomRepository.save({...room, createdBy: userId1, updatedBy: userId1})
-
-    // Thêm member vào room
+      roomName: user.username, 
+      roomAvatar: user.avatarUrl,
+      createdBy: myId,
+      updatedBy:  SYSTEM_USER_ID,
+      createdAt: new Date(),
+      updatedAt: new Date(), 
+    });
+  
+    const newRoom = await this.roomRepository.save(room);
+  
+    // Tạo thành viên 1 với đầy đủ các trường
     const member1 = new MemberEntity({
-      userId: userId1,
+      userId: userId,
       roomId: newRoom.id,
       role: MemberRole.MEMBER,
       createdBy: SYSTEM_USER_ID,
-      updatedBy: SYSTEM_USER_ID
-    })
+      updatedBy: SYSTEM_USER_ID,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  
+    // Tạo thành viên 2 với đầy đủ các trường
     const member2 = new MemberEntity({
-      userId: userId2,
+      userId: myId,
       roomId: newRoom.id,
       role: MemberRole.MEMBER,
       createdBy: SYSTEM_USER_ID,
-      updatedBy: SYSTEM_USER_ID
-    })
-    await this.memberRepository.save([member1, member2])
-
-    newRoom.members = [member1, member2]
-
+      updatedBy: SYSTEM_USER_ID,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  
+    // Lưu danh sách thành viên
+    await this.memberRepository.save([member1, member2]);
+  
+    // Gán danh sách thành viên vào phòng (nếu cần cho RoomResDto)
+    newRoom.members = [member1, member2];
+  
+    // Chuyển đổi và trả về RoomResDto
     return plainToInstance(RoomResDto, newRoom);
   }
 
@@ -108,7 +129,7 @@ export class ChatRoomService {
     const query = this.roomRepository
       .createQueryBuilder('r')
       .select([
-        'r.id','r.type','r.groupName','r.groupAvatar',
+        'r.id','r.type','r.roomName','r.roomAvatar',
         'm2.id','m2.msgVTime',
         'u.id','u.username','u.avatarUrl',
         'msg.id','msg.content','msg.type','msg.createdAt','msg.senderId','msg.sender','msg.roomId','msg.replyMessageId',
@@ -136,11 +157,11 @@ export class ChatRoomService {
       const isGroup = room.type == RoomType.GROUP
       const memberMe = room.members.filter(m => m.user.id == meId)[0]
       const memberPartner = room.members.filter(m => m.user.id != meId)[0]
-      const roomAvatarUrl = isGroup 
-        ? (room.groupAvatar || room.members.slice(0, 5).map(m => m.user.id).join(',')) 
+      const roomAvatar = isGroup 
+        ? (room.roomAvatar || room.members.slice(0, 5).map(m => m.user.id).join(',')) 
         : memberPartner.user.avatarUrl
       const roomName = isGroup 
-        ? (room.groupName || room.members.slice(0, 5).map(m => m.user.username).join(', ')) 
+        ? (room.roomName || room.members.slice(0, 5).map(m => m.user.username).join(', ')) 
         : memberPartner.user.username
 
       return {
@@ -152,7 +173,7 @@ export class ChatRoomService {
           isSelfSent: memberMe.id == room.messages[0]?.senderId,
         },
         unReadMsgCount: room.messages.filter(m => memberMe.msgVTime < m.createdAt).length,
-        roomAvatarUrl,
+        roomAvatar,
         ...(isGroup && {memberCount: room.members.length}),
       }
     })    
@@ -182,14 +203,14 @@ export class ChatRoomService {
     
     const data = await Promise.all(
       rooms.map(async room => {
-        let roomAvatarUrl: string = room.groupAvatar
-        let roomName: string = room.groupName || this.getRoomNameFromMembers(room.members)
+        let roomAvatar: string = room.roomAvatar
+        let roomName: string = room.roomName || this.getRoomNameFromMembers(room.members)
 
         return {
           id: room.id,
           type: room.type,
           members:room.members,
-          roomAvatarUrl,
+          roomAvatar,
           roomName,
         }
       })
@@ -215,11 +236,11 @@ export class ChatRoomService {
     const isGroup = room.type == RoomType.GROUP
     const memberMe = room.members.filter(m => m.user.id == meId)[0]
     const memberPartner = room.members.filter(m => m.user.id != meId)[0]
-    const roomAvatarUrl = isGroup 
-      ? (room.groupAvatar || room.members.slice(0, 5).map(m => m.user.id).join(',')) 
+    const roomAvatar = isGroup 
+      ? (room.roomAvatar || room.members.slice(0, 5).map(m => m.user.id).join(',')) 
       : memberPartner.user.avatarUrl
     const roomName = isGroup 
-      ? (room.groupName || room.members.slice(0, 5).map(m => m.user.username).join(', ')) 
+      ? (room.roomName || room.members.slice(0, 5).map(m => m.user.username).join(', ')) 
       : memberPartner.user.username
 
     return plainToInstance(RoomResDto, {
@@ -228,7 +249,7 @@ export class ChatRoomService {
       type: room.type,
       memberId: memberMe.id,
       members:room.members,
-      roomAvatarUrl,
+      roomAvatar,
       ...(isGroup && {memberCount: room.members.length}),
     })
 
@@ -243,7 +264,7 @@ export class ChatRoomService {
     // return plainToInstance(RoomResDto, result)
   }
 
-  async findOneByPartnerId(meId: Uuid, partnerId: Uuid): Promise<any>{
+  async findOneByPartnerId(meId: Uuid, partnerId: Uuid): Promise<RoomResDto>{
     // const room = await this.memberRepository
     //   .createQueryBuilder('m')
     //   .innerJoinAndSelect('m.room', 'r')
@@ -264,27 +285,15 @@ export class ChatRoomService {
 
     if (!room) {
       throw new NotFoundException('Not found room')
-    }
-
-    console.log('rrr',room.members[0]);
-    
+    }    
 
     const partner = room.members.find(m => m.user.id == partnerId)
-    const me = room.members.find(m => m.user.id == meId)
-
-    console.log('parId',partnerId);
-    
-    console.log('par',partner);
-    console.log('me',me);
     
     const result = {
       ...room,
-      memberId: me.id,
-      members: room.members,
-      roomAvatarUrl: partner.user.avatarUrl,
+      roomAvatar: partner.user.avatarUrl,
       roomName: partner.user.username
-    }
-    
+    }    
     return plainToInstance(RoomResDto, result)
   }
 
@@ -294,17 +303,6 @@ export class ChatRoomService {
 
   remove(id: number) {
     return `This action removes a #${id} chatRoom`;
-  }
-
-  async getAllRoomIdsByUserId (userId: string) {
-    const roomIds = await this.roomRepository
-      .createQueryBuilder('r')
-      .select(['r.id'])
-      .leftJoin('r.members','m')
-      .where('m.userId = :userId',{userId})
-      .getMany()
-
-    return roomIds.map(r => r.id)
   }
 
   getLastMsgByRoomId = async (roomId: Uuid) => {
@@ -368,10 +366,10 @@ export class ChatRoomService {
     return name
   }
 
-  getPersonalRoomFromUsers = async (userId1: Uuid, userId2: Uuid) => {
+  getPersonalRoomFromUsers = async (userId: Uuid, myId: Uuid) => {
     const room = await this.roomRepository
       .createQueryBuilder('r')
-      .leftJoinAndSelect('r.members','m', 'm.userId IN (:...userIds)', { userIds: [userId1, userId2] })
+      .leftJoinAndSelect('r.members','m', 'm.userId IN (:...userIds)', { userIds: [userId, myId] })
       .leftJoinAndSelect('m.user','u')
       .where('r.type = :type', { type: RoomType.PERSONAL })
       .getOne()    
@@ -381,5 +379,120 @@ export class ChatRoomService {
     }  
 
     return null
+  }
+  // private async getUserIdsOfRoomsByUserId(userId: Uuid): Promise<{ [roomId: string]: Set<string> }> {
+  //   const rooms = await this.roomRepository
+  //     .createQueryBuilder('r')
+  //     .leftJoinAndSelect('r.members', 'm')
+  //     .where(
+  //       `EXISTS (
+  //         SELECT 1
+  //         FROM member rm
+  //         WHERE rm.roomId = r.id
+  //         AND rm.userId = :userId
+  //       )`,
+  //       { userId }
+  //     )
+  //     .getMany();
+
+  //   const result: { [roomId: string]: Set<string> } = {};
+  //   rooms.forEach(room => {
+  //     result[room.id] = new Set(room.members.map(member => member.userId));
+  //   });
+
+  //   return result;
+  // }
+  async getAllRoomIdsByUserId(userId: Uuid): Promise<string[]> {
+    const rooms = await this.roomRepository
+      .createQueryBuilder('r')
+      .select('r.id')
+      .where(
+        `EXISTS (
+          SELECT 1
+          FROM member rm
+          WHERE rm.room_id = r.id
+          AND rm.user_id = :userId
+        )`,
+        { userId }
+      )
+      .getMany();
+    return rooms.map(room => room.id);
+  }
+  // async getUserIdsStatusAllRoom(userId: Uuid): Promise<{
+  //   onlineUsersRooms: string[];
+  //   offlineUsersRooms: string[];
+  // }> {
+  //   // Lấy danh sách userId trong các phòng
+  //   const userIdsRooms = await this.getUserIdsOfRoomsByUserId(userId);
+
+  //   // Lấy tất cả roomId mà user tham gia
+  //   const roomIds = await this.getAllRoomIdsByUserId(userId);
+
+  //   // Tập hợp tất cả userId từ các phòng (loại bỏ trùng lặp)
+  //   const allUserIds = new Set<string>();
+  //   Object.values(userIdsRooms).forEach(userIds => {
+  //     userIds.forEach(id => allUserIds.add(id));
+  //   });
+
+  //   // Lấy danh sách userId online từ Redis cho từng phòng
+  //   const onlineUsersRooms = new Set<string>();
+  //   await Promise.all(
+  //     roomIds.map(async (roomId) => {
+  //       const onlineUsers = await this.redisService.smembers(`online_user_room:${roomId}`);
+  //       onlineUsers.forEach(userId => onlineUsersRooms.add(userId));
+  //     })
+  //   );
+
+  //   // Tính danh sách userId offline
+  //   const offlineUsersRooms = new Set<string>();
+  //   allUserIds.forEach(id => {
+  //     if (!onlineUsersRooms.has(id)) {
+  //       offlineUsersRooms.add(id);
+  //     }
+  //   });
+
+  //   // Chuyển Set thành mảng để trả về
+  //   return {
+  //     onlineUsersRooms: Array.from(onlineUsersRooms),
+  //     offlineUsersRooms: Array.from(offlineUsersRooms),
+  //   };
+  // }
+  private async getUserIdsRoom(roomId: string): Promise<string[]> {
+    const room = await this.roomRepository
+      .createQueryBuilder('r')
+      .leftJoinAndSelect('r.members', 'm')
+      .where('r.id = :roomId', { roomId })
+      .getOne();
+  
+    if (!room || !room.members) {
+      return [];
+    }
+  
+    return room.members.map(member => member.userId);
+  }
+
+  async getUserIdsStatusRoom(roomId: string): Promise<{
+    onlineUsersRoom: string[];
+    offlineUsersRoom: string[];
+  }> {
+    const allUserIds = await this.getUserIdsRoom(roomId);
+    if (allUserIds.length === 0) {
+      return { onlineUsersRoom: [], offlineUsersRoom: [] };
+    }
+  
+    // Tạo danh sách key để truy vấn Redis
+    const redisKeys = allUserIds.map(userId => `USER_CLIENT:${userId}`);
+  
+    // Lấy tất cả socketId trong một lần gọi MGET
+    const socketIds = await this.redisService.mget(...redisKeys);
+  
+    const onlineUsersRoom = allUserIds.filter((_, index) => socketIds[index] !== null);
+
+    const offlineUsersRoom = allUserIds.filter((_, index) => socketIds[index] === null);
+      
+    return {
+      onlineUsersRoom,
+      offlineUsersRoom,
+    };
   }
 }

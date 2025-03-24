@@ -1,10 +1,10 @@
 import { io } from "socket.io-client";
 
-const sockets = {}; // Lưu các kết nối theo namespace
+const sockets = {};
 
 export const connectSocket = (namespace) => {
   if (!sockets[namespace]) {    
-    sockets[namespace] = io(`http://localhost:7777/${namespace}`, {
+    sockets[namespace] = io(`http://192.168.1.10:7777/${namespace}`, {
       transports: ["websocket"],
       auth: {
         token: `Bearer ${localStorage.getItem("accessToken")}`,

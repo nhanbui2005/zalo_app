@@ -57,9 +57,10 @@ export const textStyle = StyleSheet.create({
     color: colors.white,
     backgroundColor: colors.red,
     fontSize: 8,
-    width: 22,
     height: 17,
+    fontWeight: 'bold',
     paddingHorizontal: 6,
+    paddingTop: 1,
     borderRadius: 20,
     borderWidth: 1.6
   },

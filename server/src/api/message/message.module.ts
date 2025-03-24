@@ -1,7 +1,6 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { forwardRef, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { MessageService } from './message.service';
 import { MessageController } from './message.controller';
-import { MessageGateway } from './message.gateway';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from '../user/entities/user.entity';
 import { ChatRoomEntity } from '../chat-room/entities/chat-room.entity';
@@ -13,12 +12,21 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { ChatRoomModule } from '../chat-room/chat-room.module';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueName, QueuePrefix } from '@/constants/job.constant';
+import { RedisModule } from '@/redis/redis.module';
+import { RelationModule } from '../relationship/relation.module';
+import { EventsModule } from 'src/events/events.module';
+import { UserModule } from '../user/user.module';
+
 
 @Module({
   imports:[
-    AuthModule,
-    CloudinaryModule,
+    RedisModule,
+    forwardRef(() => EventsModule),
     ChatRoomModule,
+    AuthModule,
+    RelationModule,
+    CloudinaryModule,
+    UserModule,
     TypeOrmModule.forFeature([
       UserEntity,
       ChatRoomEntity,
@@ -36,7 +44,8 @@ import { QueueName, QueuePrefix } from '@/constants/job.constant';
         }),
   ],
   controllers: [MessageController],
-  providers: [MessageService, MessageGateway],
+  providers: [MessageService],
+  exports: [MessageService, TypeOrmModule]
 })
 export class MessageModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

@@ -1,5 +1,5 @@
 import axiosInstance from '~/configs/axiosInstance';
-import { UserSearchRes } from './dto/user.dto.parent';
+import { _UserRes, UserSearchRes } from './dto/user.dto.parent';
 import { UserFriend } from './dto/user.dto.nested';
 import { UserEntity } from './userEntity';
 
@@ -21,9 +21,9 @@ const searchUserByEmail = async (email: string): Promise<UserSearchRes> => {
   }
 };
 
-const getAllFriends = async (): Promise<UserFriend[]> => {
+const getAllFriends = async (): Promise<_UserRes[]> => {
   try {    
-    return await axiosInstance.get('users'); 
+    return await axiosInstance.get('users/friends'); 
   } catch (error: any) {
     console.error('Error while searching user:', error);
     throw error; 

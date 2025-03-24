@@ -13,3 +13,8 @@ export enum MessageViewStatus {
   VIEWED = 'viewed',
   REVOKED = 'revoked',
 }
+
+export enum MessageSource {
+  SYSTEM = 'system',
+  PEOBLE = 'peoble',
+}

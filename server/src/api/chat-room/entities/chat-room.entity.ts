@@ -20,11 +20,11 @@ export class ChatRoomEntity extends AbstractEntity {
   @Column({type:'enum', enum:RoomType})
   type!: RoomType
 
-  @Column({name:'group_name', nullable: true})
-  groupName?: string
+  @Column({name:'room_name', nullable: true})
+  roomName?: string
 
-  @Column({name:'group_avatar', nullable: true})
-  groupAvatar?: string
+  @Column({name:'room_avatar', nullable: true})
+  roomAvatar?: string
 
   @Column({name:'member_limit', type:'integer', default:MEMBER_LIMIT})
   memberLimit: number = MEMBER_LIMIT

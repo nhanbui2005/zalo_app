@@ -3,13 +3,12 @@ import {
   Text,
   Image,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   ScrollView,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {Assets} from '~/styles/Ui/assets';
 import {colors} from '~/styles/Ui/colors';
 import {viewStyle} from '~/styles/Ui/views';
@@ -17,37 +16,18 @@ import {textStyle} from '~/styles/Ui/text';
 import {iconSize} from '~/styles/Ui/icons';
 import {useNavigation} from '@react-navigation/native';
 import {MainNavProp, StackNames} from '~/routers/types';
-import {imagesStyle} from '~/styles/Ui/image';
-import {relationApi} from '~/features/relation/relationService';
-import {RelationStatus} from '~/features/relation/dto/relation.dto.enum';
-import {UserBase} from '~/features/user/dto/user.dto.nested';
-import { useRelationStore } from '~/stores/zustand/relation.store';
+import { useDispatch } from 'react-redux';
+import FriendListView from './components/listFriend';
 
 const FriendTab = ({ onScrollY }) => {
   const mainNav = useNavigation<MainNavProp>();
-  const { relations_Friend, fetchRelations } = useRelationStore();
-
-  useEffect(() => {
-    fetchRelations(RelationStatus.FRIEND);        
-  }, []);
+  const dispath = useDispatch()
 
   const items = [
     {icon: Assets.icons.friend_white, label: 'Lời mời kết bạn'},
     {icon: Assets.icons.contract_list_white, label: 'Danh bạ máy'},
     {icon: Assets.icons.birth_white, label: 'Lịch sinh nhật'},
   ];
-
-  const renderFriend = (item: UserBase) => {
-    return(
-      <TouchableOpacity
-        style={[styles.userItem, {gap: 10, backgroundColor: 'white'}]}
-        onPress={() => mainNav.navigate(StackNames.ChatScreen, {userId: item.id})}>
-      <Image source={{uri: item.avatarUrl}} style={imagesStyle.avatar_50} />
-      <Text style={textStyle.body_md}>{item.username}</Text>
-    </TouchableOpacity>
-    )
-  }
-  
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const scrollY = event.nativeEvent.contentOffset.y;
@@ -87,12 +67,9 @@ const FriendTab = ({ onScrollY }) => {
         </View>
       </View>
       <View style={{backgroundColor: colors.white, height: 400}}></View>
-      <FlatList
-        scrollEnabled={false} 
-        data={relations_Friend.map(item => item.user)}
-        renderItem={({item}) => renderFriend(item)}
-        keyExtractor={item => item.id}
-      />
+      
+      <FriendListView/>
+
       <View style={{backgroundColor: colors.white, height: 60}}></View>
 
     </ScrollView>

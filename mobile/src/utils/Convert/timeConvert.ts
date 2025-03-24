@@ -35,6 +35,15 @@ const calculateElapsedTime = (timestamp: string | Date): string => {
   if (diffInMinutes < 60) return `${diffInMinutes} phút trước`;
   if (diffInHours < 24) return `${diffInHours} giờ trước`;
   if (diffInDays < 7) return `${diffInDays} ngày trước`;
+  if (diffInDays >= 7) {
+    const day = date.getDate().toString().padStart(2, "0"); 
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    return `${day}/${month}`; 
+  }
+  
+  
+  
+  
 
   return formatToFullDate(date.toISOString());
 };

@@ -11,7 +11,9 @@ import { RelationEntity } from '../relationship/entities/relation.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity,RoleEntity,AuthProviderEntity, RelationEntity]),
+    TypeOrmModule.forFeature([
+      UserEntity,RoleEntity,AuthProviderEntity, RelationEntity
+    ]),
     BullModule.registerQueue({
       name: QueueName.EMAIL,
       prefix: QueuePrefix.AUTH,
@@ -24,6 +26,6 @@ import { RelationEntity } from '../relationship/entities/relation.entity';
   ],
   controllers: [UserController],
   providers: [UserService],
-  exports: [UserService],
+  exports: [UserService, TypeOrmModule],
 })
 export class UserModule {}

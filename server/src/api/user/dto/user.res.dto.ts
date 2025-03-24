@@ -42,13 +42,13 @@ export class UserResDto {
   @Expose()
   avatarPid: string;
 
-  @BooleanField()
+  @StringField()
   @Expose()
-  isOnline: boolean;
+  coverUrl: string;
 
-  @ClassField(() => Date)
+  @StringField()
   @Expose()
-  lastOnline: Date;
+  coverPid: string;
 
   @ClassField(() => Date)
   @Expose()

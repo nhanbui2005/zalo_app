@@ -1,27 +1,61 @@
-import { OnEvent } from '@nestjs/event-emitter';
+import { Injectable } from '@nestjs/common';
 import {
-  MessageBody,
-  SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  WsResponse,
 } from '@nestjs/websockets';
-import { from, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { Server } from 'socket.io';
+import { RoomResDto } from '../chat-room/dto/room.res.dto';
+import { UserResDto } from '../user/dto/user.res.dto';
+import { RelationStatus } from '@/constants/entity-enum/relation.enum';
+import { SocketEmitKey } from '@/constants/socket-emit.constanct';
+import { EventEmitterKey } from '@/constants/event-emitter.constant';
+import { OnEvent } from '@nestjs/event-emitter';
+import { createCacheKey } from '@/utils/cache.util';
+import { CacheKey } from '@/constants/cache.constant';
+import { RedisService } from '@/redis/redis.service';
 
-@WebSocketGateway({namespace:'friend'})
+@Injectable()
+@WebSocketGateway({namespace:'/relation'})
 export class EventsGateway {
   @WebSocketServer()
   server: Server;
-  
-  @SubscribeMessage('events')
-  findAll(@MessageBody() data: any): Observable<WsResponse<number>> {
-    return from([1, 2, 3]).pipe(map(item => ({ event: 'events', data: item })));
-  }
 
-  @SubscribeMessage('identity')
-  async identity(@MessageBody() data: number): Promise<number> {
-    return data;
+   constructor(
+      private readonly redisService: RedisService, 
+    ) {}
+
+  @OnEvent(EventEmitterKey.UPDATE_RELATION_REQ)
+  async handleRelationUpdate(
+    userId: string,
+    relationStatus: RelationStatus,
+    room?: RoomResDto,
+    user?: UserResDto,
+  ): Promise<void> {
+    try {
+        const userKeySocket = createCacheKey(CacheKey.USER_CLIENT, userId)
+        const targetSocketId = await this.redisService.get(userKeySocket);
+
+        const payload = {
+            userId,
+            relationStatus,
+            room,
+            user,
+            updatedAt: new Date().toISOString(), 
+        };
+
+        if (targetSocketId) {
+          // User online, gửi thông báo ngay
+          this.server.to(targetSocketId).emit(SocketEmitKey.RELATION_UPDATED, payload);
+          console.log(`Sent relation update to socketId ${targetSocketId} for user ${userId}`);
+        } else {
+          // User không online, lưu vào Redis
+          const pendingKey = createCacheKey(CacheKey.UNRECEIVE_HANDLE_REQUEST_RELATION, userId);
+          await this.redisService.lpush(pendingKey, JSON.stringify(payload));
+        }
+
+    } catch (error) {
+      console.error('Error handling relation update:', error);
+      throw new Error(`Failed to emit relation update: ${error.message}`);
+    }
   }
 }

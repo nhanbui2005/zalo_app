@@ -2,12 +2,22 @@ import React from "react";
 import { View, Image, StyleSheet, Text } from "react-native";
 
 interface GroupAvatarProps {
-  roomAvatarUrls: string[];
+  roomAvatar: string;
 }
 
-const GroupAvatar: React.FC<GroupAvatarProps> = ({ roomAvatarUrls }) => {
+const Avatar: React.FC<GroupAvatarProps> = ({ roomAvatar }) => {
+  const roomAvatarUrls = roomAvatar ? roomAvatar.split('|') : [];
   const maxAvatars = 4;
   const displayedAvatars = roomAvatarUrls.slice(0, maxAvatars);
+
+  if (roomAvatarUrls.length <= 1) {
+    return (
+      <Image
+        style={imagesStyle.avatar_50}
+        source={{ uri: roomAvatarUrls[0] || '' }}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -66,4 +76,13 @@ const styles = StyleSheet.create({
   },
 });
 
-export default GroupAvatar;
+// Giả định imagesStyle đã được định nghĩa ở đâu đó
+const imagesStyle = StyleSheet.create({
+  avatar_50: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+});
+
+export default Avatar;

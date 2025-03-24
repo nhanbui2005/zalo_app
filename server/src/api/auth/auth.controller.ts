@@ -57,6 +57,7 @@ async googleLoginMobile(@Body() dto: LoginWithGoogleReqMobileDto) {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
+
   }
 
   @Get('google/callback')
@@ -129,33 +130,10 @@ async googleLoginMobile(@Body() dto: LoginWithGoogleReqMobileDto) {
     return await this.authService.refreshToken(dto);
   }
 
-  // @ApiPublic()
-  // @Post('forgot-password')
-  // async forgotPassword() {
-  //   return 'forgot-password';
-  // }
-
-  // @ApiPublic()
-  // @Post('verify/forgot-password')
-  // async verifyForgotPassword() {
-  //   return 'verify-forgot-password';
-  // }
-
-  // @ApiPublic()
-  // @Post('reset-password')
-  // async resetPassword() {
-  //   return 'reset-password';
-  // }
-
   @ApiPublic()
   @Get('verify/email')
   async verifyEmail(@Query() query) {
     return this.authService.verifyEmail(query.token);
   }
 
-  // @ApiPublic()
-  // @Post('verify/email/resend')
-  // async resendVerifyEmail() {
-  //   return 'resend-verify-email';
-  // }
 }

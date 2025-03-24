@@ -4,12 +4,10 @@ import { Assets } from '../../assets'
 import { useDispatch, useSelector } from 'react-redux'
 import Utils from '../../utils/utils'
 import GroupAvatar from '../../components/GroupAvatar'
-import { addNewMgs, setCurrentRoom } from '../../redux/slices/currentRoomSlice'
+import { addNewMgs } from '../../redux/slices/currentRoomSlice'
 import useSocketEvent from '../../hooks/useSocket'
 import {
   getAllRooms,
-  loadMoreMsgWhenConnect,
-  setViewAllMsg,
   updateLastMsgForRoom,
   updateLastMsgForRoomWhenSentMsg,
 } from '../../redux/slices/roomSlice'
@@ -170,15 +168,15 @@ const ConversationItem = ({
       onMouseLeave={() => setIsHover(false)}
       // onClick={onClick}
     >
-      {data.roomAvatarUrl ? (
+      {data.roomAvatar ? (
         <img
           className="size-12 rounded-full"
-          src={data.roomAvatarUrl}
+          src={data.roomAvatar}
           alt="Placeholder"
         />
       ) : (
         <div className="relative z-0">
-          <GroupAvatar roomAvatarUrls={data.roomAvatarUrls} />
+          <GroupAvatar roomAvatars={data.roomAvatars} />
         </div>
       )}
 

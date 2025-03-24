@@ -59,6 +59,12 @@ export class UserEntity extends AbstractEntity {
   @Column({name:'avatar_pid', nullable:true })
   avatarPid?: string;
 
+  @Column({ name: 'cover_url', default: DEFAULT_AVATAR_URL })
+  coverUrl?: string;
+
+  @Column({name:'cover_pid', nullable:true })
+  coverPid?: string;
+
   @Column({name:'is_active', default:true})
   isActive: boolean
 
@@ -73,7 +79,7 @@ export class UserEntity extends AbstractEntity {
   clientId: Uuid
 
   @Column({name:'is_online', default: false})
-  isOnline: Uuid
+  isOnline: boolean
   
   @Column({name:'lastOnline', default: new Date()})
   lastOnline: Date

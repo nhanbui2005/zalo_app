@@ -32,7 +32,6 @@ import { SYSTEM_USER_ID } from '@/constants/app.constant';
 import { plainToInstance } from 'class-transformer';
 import { CacheKey } from '@/constants/cache.constant';
 import { createCacheKey } from '@/utils/cache.util';
-import { Cache } from 'cache-manager';
 import { AuthProviderEntity } from '../user/entities/auth-provider.entity';
 import { AuthProviderType, Role } from '@/constants/entity.enum';
 import { LoginReqDto } from './dto/login.req.dto';
@@ -47,6 +46,7 @@ import { VerifyForgotPasswordReqDto } from './dto/verify-fogot-password.req.dto 
 import { RefreshReqDto } from './dto/refresh.req.dto';
 import { RefreshResDto } from './dto/refresh.res.dto';
 import { JwtRefreshPayloadType } from './types/jwt-refresh-payload.type';
+import { RedisService } from '@/redis/redis.service';
 
 type Token = Branded<
   {
@@ -62,6 +62,7 @@ export class AuthService {
   constructor(
     private readonly configService: ConfigService<AllConfigType>,
     private readonly jwtService: JwtService,
+    private readonly redisService: RedisService, 
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(RoleEntity)
@@ -70,8 +71,6 @@ export class AuthService {
     private readonly authProviderRepository: Repository<AuthProviderEntity>,
     @InjectQueue(QueueName.EMAIL)
     private readonly emailQueue: Queue<IEmailJob, any, string>,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
   ) {}
 
   async signIn(dto: LoginReqDto): Promise<LoginResDto> {
@@ -137,7 +136,7 @@ export class AuthService {
 
   async register(dto: RegisterReqDto): Promise<RegisterResDto> {
     //check cache require register accept in 60s
-    const registered = await this.cacheManager.get<string>(dto.email);
+    const registered = await this.redisService.get(dto.email);
     if (registered === 'register') {
       throw new BadRequestException();
     }
@@ -194,12 +193,12 @@ export class AuthService {
         infer: true,
       },
     );
-    await this.cacheManager.set(
+    await this.redisService.set(
       createCacheKey(CacheKey.EMAIL_VERIFICATION, user.id),
       token,
       ms(tokenExpiresIn),
     );
-    await this.cacheManager.set(dto.email, 'register', 60000);
+    await this.redisService.set(dto.email, 'register', 60000);
 
     await this.emailQueue.add(
       JobName.EMAIL_VERIFICATION,
@@ -216,11 +215,22 @@ export class AuthService {
   }
 
   async logout(userToken: JwtPayloadType): Promise<void> {
-    await this.cacheManager.store.set<boolean>(
+    // Tính TTL
+    const expirationTimeInMs = userToken.exp * 1000; // Chuyển exp từ giây sang milliseconds
+    const currentTimeInMs = Date.now(); // Thời gian hiện tại (milliseconds)
+    const ttlInMs = expirationTimeInMs - currentTimeInMs; // Thời gian còn lại (milliseconds)
+    
+    // Đảm bảo TTL không âm và chuyển sang giây
+    const ttlInSeconds = Math.max(0, Math.floor(ttlInMs / 1000)); // Chuyển sang giây, không âm
+  
+    // Lưu vào Redis với TTL
+    await this.redisService.set(
       createCacheKey(CacheKey.SESSION_BLACKLIST, userToken.sessionId),
-      true,
-      userToken.exp * 1000 - Date.now(),
+      "true", // Giá trị là chuỗi
+      ttlInSeconds, // TTL tính bằng giây
     );
+  
+    // Xóa phiên từ cơ sở dữ liệu
     await SessionEntity.delete(userToken.sessionId);
   }
 
@@ -254,31 +264,47 @@ export class AuthService {
   }
 
   async verifyAccessToken(token: string): Promise<JwtPayloadType> {
+
+    if (!token) {
+      return
+    }
+    
     let payload: JwtPayloadType;
-    try {
-      payload = this.jwtService.verify(token, {
-        secret: this.configService.getOrThrow('auth.secret', { infer: true }),
-      });
-    } catch {
-      throw new UnauthorizedException();
+    // Xác minh token
+    
+    try {      
+      payload = this.jwtService.verify(token.trim(), {
+        secret: 'secret'
+      }); 
+    } catch(error) {
+      console.error('Lỗi khi xác minh token:', error);
+      throw new UnauthorizedException('Token không hợp lệ');
     }
 
-    // Force logout if the session is in the blacklist
-    const isSessionBlacklisted = await this.cacheManager.store.get<boolean>(
+   // Kiểm tra xem phiên có trong blacklist không
+  try {
+    const blacklistedValue = await this.redisService.get(
       createCacheKey(CacheKey.SESSION_BLACKLIST, payload.sessionId),
     );
 
-    if (isSessionBlacklisted) {
-      throw new UnauthorizedException();
-    }
+    // Chuyển đổi giá trị từ Redis sang boolean
+    const isSessionBlacklisted = blacklistedValue === 'true';
 
-    return payload;
+    if (isSessionBlacklisted) {
+      throw new UnauthorizedException('Phiên đã bị đăng xuất');
+    }
+  } catch (error) {
+    console.error('Lỗi khi kiểm tra blacklist trong Redis:', error);
+    throw new UnauthorizedException('Không thể xác minh phiên');
+  }
+
+  return payload;
   }
 
   async verifyEmail(token: string): Promise<any> {
     const { id } = await this.verifyEmailToken(token);
 
-    const tokenCache = await this.cacheManager.get<string>(
+    const tokenCache = await this.redisService.get(
       createCacheKey(CacheKey.EMAIL_VERIFICATION, id),
     );
 
@@ -308,7 +334,7 @@ export class AuthService {
       { attempts: 3, backoff: { type: 'exponential', delay: 60000 } },
     );
     //cache otp & account
-    await this.cacheManager.store.set<string>(
+    await this.redisService.set(
       createCacheKey(CacheKey.PASSWORD_RESET, email),
       otp,
       3 * 60 * 1000,
@@ -319,7 +345,7 @@ export class AuthService {
     const account = await this.authProviderRepository.findOneByOrFail({
       email: dto.email,
     });
-    const otpCache = await this.cacheManager.get<string>(
+    const otpCache = await this.redisService.get(
       createCacheKey(CacheKey.PASSWORD_RESET, dto.email),
     );
     if (!otpCache || otpCache !== dto.otp) {
@@ -327,7 +353,7 @@ export class AuthService {
     }
     account.password = dto.password;
     await this.authProviderRepository.save(account);
-    await this.cacheManager.del(
+    await this.redisService.del(
       createCacheKey(CacheKey.PASSWORD_RESET, dto.email),
     );
     return;
@@ -380,6 +406,7 @@ export class AuthService {
       hash,
     });
 
+    
     return plainToInstance(LoginResDto, {
       userId: user.id,
       ...token,
@@ -411,6 +438,7 @@ export class AuthService {
   }
 
   private async createVerificationToken(data: { id: string }): Promise<string> {
+    
     return await this.jwtService.signAsync(
       {
         id: data.id,
@@ -432,6 +460,7 @@ export class AuthService {
     sessionId: string;
     hash: string;
   }): Promise<Token> {
+    
     const tokenExpiresIn = this.configService.getOrThrow('auth.expires', {
       infer: true,
     });
@@ -464,6 +493,7 @@ export class AuthService {
         },
       ),
     ]);
+    
     return {
       accessToken,
       refreshToken,

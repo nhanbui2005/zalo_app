@@ -3,28 +3,20 @@ import React, { useState } from 'react';
 import { textStyle } from '~/styles/Ui/text';
 import { colors } from '~/styles/Ui/colors';
 import useSocketEvent from '~/hooks/useSocket ';
+import { useChatStore } from '~/stores/zustand/chat.store';
 
 interface WritingSocket{
     memberId:string,
     status: boolean
 }
-const StatusChat = () => {
-  const [statusChat, setStatusChat] = useState(false)
-
-   useSocketEvent<WritingSocket>({
-      event: `writing_message`,
-      callback: (result) => {      
-        console.log('writing', result);
-        if (result.status) {
-            setStatusChat(true)
-        }else {
-            setStatusChat(false)
-        }
-      },
-    });
-    
+interface Props {
+  isGroup: boolean
+}
+const StatusChat = (props: Props) => {
+  const {memberWriting} = useChatStore()
+  const content = props.isGroup ? `${memberWriting}Đang soạn tin` : `Đang soạn tin...`
   return (
-    <>{statusChat && <Text style={styles.isChating}>Đang soạn tin...</Text>}</>
+    <>{memberWriting && <Text style={styles.isChating}>{content}</Text>}</>
   );
 };
 

@@ -8,7 +8,6 @@ import {colors} from '~/styles/Ui/colors';
 import {InviterTypeEnum} from '~/features/user/dto/user.enum';
 import {Fonts} from '~/styles/Ui/fonts';
 import {calculateElapsedTime} from '~/utils/Convert/timeConvert';
-import {relationApi} from '~/features/relation/relationService';
 import {useNavigation} from '@react-navigation/native';
 import {MainNavProp, StackNames} from '~/routers/types';
 import {
@@ -17,6 +16,14 @@ import {
 } from '~/features/relation/dto/relation.dto.enum';
 import {Assets} from '~/styles/Ui/assets';
 import { useRelationStore } from '~/stores/zustand/relation.store';
+import { database } from '~/database';
+import { useSelector } from 'react-redux';
+import { appSelector } from '~/features/app/appSlice';
+import MessageRepository from '~/database/repositories/MessageRepository';
+import RoomRepository from '~/database/repositories/RoomRepository';
+import { relationApi } from '~/features/relation/relationApi';
+import { syncWhenAcceptRequest } from '~/features/relation/relationService';
+import MemberRepository from '~/database/repositories/MemberRepository';
 
 export interface RequestItemProps {
   relation: Relation;
@@ -26,6 +33,8 @@ export interface RequestItemProps {
 const RequestItem = React.memo(({ relation, itemOnPress }: RequestItemProps) => {
 
   const mainNav = useNavigation<MainNavProp>();
+ 
+  const {meData } = useSelector(appSelector)
   const { relations_Changing, changingStatusRelation } = useRelationStore();
 
   const [_send, _setSend] = useState<boolean>(true);
@@ -107,13 +116,25 @@ const RequestItem = React.memo(({ relation, itemOnPress }: RequestItemProps) => 
   };
 
   const handleItemOnpress = (action: RelationAction) => {
-    
-    const relationId = relation.id;
+
+    const relationId = relation.id;    
     
     const req = {relationId, action};
 
-    relationApi.handleRequest(req).then(() => {
+    relationApi.handleRequest(req)
+      .then((res) => { 
+               
         handleWithAction(action)
+
+        if (res.room && res.user && meData) {
+          
+          syncWhenAcceptRequest(
+            res.room,
+            res.requesterId,
+            res.handlerId,
+            meData?.id,
+          )
+        }
       })
       .catch(error => {
         console.error('Error in handleSenReq:', error);
@@ -121,7 +142,7 @@ const RequestItem = React.memo(({ relation, itemOnPress }: RequestItemProps) => 
   };
 
   const goChatScreen=()=>{
-    mainNav.navigate(StackNames.ChatScreen, {userId: relation.user.id});
+    mainNav.navigate(StackNames.ChatScreen);
   }
   const handleMenuPress=()=>{
 

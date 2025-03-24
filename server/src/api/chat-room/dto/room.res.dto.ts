@@ -20,11 +20,7 @@ export class RoomResDto {
 
   @StringFieldOptional()
   @Expose()
-  roomAvatarUrl: string;
-
-  @StringFieldOptional({each: true})
-  @Expose()
-  roomAvatarUrls: string[];
+  roomAvatar: string;
 
   @StringField()
   @Expose()

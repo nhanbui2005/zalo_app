@@ -10,7 +10,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import assert from 'assert';
 import { plainToInstance } from 'class-transformer';
-import { In, Repository } from 'typeorm';
+import { In, Or, Repository } from 'typeorm';
 import { CreateUserReqDto } from './dto/create-user.req.dto';
 import { ListUserReqDto } from './dto/list-user.req.dto';
 import { LoadMoreUsersReqDto } from './dto/load-more-users.req.dto';
@@ -106,6 +106,50 @@ export class UserService {
       takeAll: false,
     });
     return new OffsetPaginatedDto(plainToInstance(UserResDto, users), metaDto);
+  }
+
+  async findAllUserFriends(
+    currentUserId: Uuid
+  ): Promise<UserResDto[]> {
+    // Tạo query để lấy danh sách người dùng bạn bè và bị chặn
+    const query = this.userRepository
+      .createQueryBuilder('user')
+      // Join với bảng relations để tìm các mối quan hệ liên quan đến currentUserId
+      .innerJoin(
+        'relation',
+        'relation',
+        // Điều kiện: user.id phải là requester hoặc handler trong mối quan hệ
+        '(relation.requesterId = :currentUserId AND relation.handlerId = user.id) OR ' +
+        '(relation.handlerId = :currentUserId AND relation.requesterId = user.id)',
+        { currentUserId }
+      )
+      // Chỉ lấy các mối quan hệ có status là FRIEND hoặc BLOCKED
+      .where('relation.status IN (:...statuses)', {
+        statuses: [RelationStatus.FRIEND, RelationStatus.BLOCKED],
+      })
+      // Đảm bảo không lấy chính currentUserId
+      .andWhere('user.id != :currentUserId', { currentUserId })
+      // Chọn các trường cần thiết từ bảng users
+      .select([
+        'user.id',
+        'user.username',
+        'user.email',
+        'user.gender',
+        'user.dob',
+        'user.bio',
+        'user.avatarUrl',
+        'user.avatarPid',
+        'user.coverUrl',
+        'user.coverPid',
+        'user.createdAt',
+        'user.updatedAt',
+      ]);
+  
+    // Lấy tất cả các bản ghi từ query
+    const users = await query.getMany();
+  
+    // Chuyển đổi dữ liệu thành DTO và trả về
+    return plainToInstance(UserResDto, users);
   }
 
   async loadMoreUsers(

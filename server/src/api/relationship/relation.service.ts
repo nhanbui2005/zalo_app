@@ -8,14 +8,15 @@ import { UserEntity } from '../user/entities/user.entity';
 import { Uuid } from '@/common/types/common.type';
 import { plainToInstance } from 'class-transformer';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { createEventKey } from '@/utils/socket.util';
-import { EventKey } from '@/constants/event.constants';
 import { SYSTEM_USER_ID } from '@/constants/app.constant';
 import { ValidationException } from '@/exceptions/validation.exception';
 import { ErrorCode } from '@/constants/error-code.constant';
 import { EventEmitterKey } from '@/constants/event-emitter.constant';
 import { InviterType, RelationAction, RelationStatus } from '@/constants/entity-enum/relation.enum';
 import { ChatRoomService } from '../chat-room/chat-room.service';
+import { RoomResDto } from '../chat-room/dto/room.res.dto';
+import { UserResDto } from '../user/dto/user.res.dto';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class RelationService {
@@ -24,6 +25,7 @@ export class RelationService {
     private readonly relationRepository: Repository<RelationEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private userService: UserService,
     private eventEmitter: EventEmitter2,
     private chatRoomService: ChatRoomService
   ){}
@@ -68,7 +70,7 @@ export class RelationService {
   }
 
   async handleRequest(dto: HandleRequestToAddFriendReqDto, myId: Uuid): Promise<RelationResDto>{
-    //check relation exists
+    //check relation exists    
     const relation = await this.relationRepository.findOneBy({
       id: dto.relationId,
       status: RelationStatus.PENDING
@@ -78,6 +80,9 @@ export class RelationService {
       throw new ValidationException(ErrorCode.RELATION_E002)
     }
     
+    let room: RoomResDto | null = null;
+    let user: UserResDto | null = null;    
+
     if (
       dto.action === RelationAction.DECLINE ||  //Từ chối kết bạn
       dto.action === RelationAction.REVOKE      //Thu hồi lời mời
@@ -91,30 +96,56 @@ export class RelationService {
       //check chat room exists, if not, create one
       const chatRoom = await this.chatRoomService.getPersonalRoomFromUsers(relation.requesterId, myId);
       if (!chatRoom){
-        await this.chatRoomService.createPersonalRoom(relation.requesterId, myId);
+        room = await this.chatRoomService.createPersonalRoom(relation.requesterId, myId);
       }
-      
-      //gửi thống báo đến cho người gửi yêu cầu
-      this.eventEmitter.emit(
-        EventEmitterKey.ACCEPT_RELATION_REQ,
-        {
-          relationId: relation.id
-        }
-      )
-    }
 
-    return plainToInstance(RelationResDto, {...relation, createdBy: SYSTEM_USER_ID, updatedBy: SYSTEM_USER_ID})
+      // Lấy thông tin user (ở đây lấy requesterId)
+      const requester = await this.userService.findOne(relation.requesterId);
+      if (requester) {
+        user = {
+          id: requester.id,
+          username: requester.username,
+          email: requester.email,
+          gender: requester.gender,
+          dob: requester.dob,
+          bio: requester.bio,
+          avatarUrl: requester.avatarUrl,
+          avatarPid: requester.avatarPid,
+          coverUrl: requester.coverUrl,
+          coverPid: requester.coverPid,
+          createdAt: requester.createdAt,
+          updatedAt: requester.updatedAt
+        };
+      }
+    }
+    //gửi sự kiện sau khi handle relation request
+    this.eventEmitter.emit(
+      EventEmitterKey.UPDATE_RELATION_REQ,
+      {
+        userId: relation.requesterId == myId ? relation.handlerId : relation.requesterId,
+        RelationStatus: relation.status,
+        room: room,
+        user: user,
+      }
+    )
+
+     const a = plainToInstance(RelationResDto, {
+      ...relation,
+      room,
+      user,
+      createdBy: SYSTEM_USER_ID,
+      updatedBy: SYSTEM_USER_ID
+    });  
+    console.log(a);
+    
+    return a
   }
 
-  async getAllRelations(currentUserId: Uuid, status: RelationStatus) : Promise<any[]>{        
+  async getAllRelations(currentUserId: Uuid, status: RelationStatus) : Promise<any[]>{            
     const query = this.relationRepository
       .createQueryBuilder('relation')
       .leftJoinAndSelect('relation.requester', 'requester')
       .leftJoinAndSelect('relation.handler', 'handler')
-      // .where(
-      //   '(requester.id = :currentUserId) OR (handler.id = :currentUserId)',
-      //   { currentUserId }
-      // )
       .where(
         '((requester.id = :currentUserId) OR (handler.id = :currentUserId))',
         { currentUserId }
@@ -148,6 +179,37 @@ export class RelationService {
     })
     
     return result
+  }
+
+
+  async getAllRelationIds(currentUserId: Uuid, status: RelationStatus): Promise<Set<string>> {
+    const query = this.relationRepository
+      .createQueryBuilder('relation')
+      .select([
+        'relation.requesterId',
+        'relation.handlerId',
+      ])
+      .where(
+        '((relation.requesterId = :currentUserId) OR (relation.handlerId = :currentUserId))',
+        { currentUserId }
+      );
+
+    if (status) {
+      query.andWhere('relation.status = :status', { status });
+    }
+
+    const relations = await query.getRawMany();
+
+    // Dùng Set để lưu trữ ngay từ đầu
+    const relationIds = new Set<string>();
+    relations.forEach((item) => {
+      const id = item.relation_requesterId === currentUserId
+        ? item.relation_handlerId
+        : item.relation_requesterId;
+      relationIds.add(id);
+    });
+
+    return relationIds;
   }
 
   async deleteRelation(id: Uuid): Promise<any>{

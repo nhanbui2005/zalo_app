@@ -5,7 +5,6 @@ import appConfig from '@/config/app.config';
 import mailConfig from '@/mail/config/mail.config';
 import redisConfig from '@/redis/config/redis.config';
 import { BullModule } from '@nestjs/bullmq';
-import { CacheModule } from '@nestjs/cache-manager';
 import databaseConfig from '@/database/config/database.config';
 import { TypeOrmConfigService } from '@/database/typeorm-config.service';
 import { ModuleMetadata } from '@nestjs/common';
@@ -13,7 +12,6 @@ import { ConfigModule, ConfigService, PathImpl2 } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { AllConfigType } from '@/config/config.type';
-import { redisStore } from 'cache-manager-ioredis-yet';
 import { AcceptLanguageResolver, HeaderResolver, I18nModule, QueryResolver } from 'nestjs-i18n';
 import { Environment } from '@/constants/app.constant';
 import path from 'path';
@@ -22,6 +20,7 @@ import loggerFactory from './logger-factory';
 import { MailModule } from '@/mail/mail.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { EventsModule } from 'src/events/events.module';
+import { RedisModule } from '@/redis/redis.module';
 
 function generateModulesSet() {
   const imports: ModuleMetadata['imports'] = [
@@ -36,6 +35,7 @@ function generateModulesSet() {
       ],
       envFilePath: ['.env'],
     }),
+    EventsModule
   ];
   let customModules: ModuleMetadata['imports'] = [];
   const dbModule = TypeOrmModule.forRootAsync({
@@ -51,22 +51,14 @@ function generateModulesSet() {
 
   const bullModule = BullModule.forRootAsync({
     imports: [ConfigModule],
-    useFactory: (configService: ConfigService<AllConfigType>) => {
-      return {
-        connection:{
-          host: configService.getOrThrow('redis.host', {
-            infer: true,
-          }),
-          port: Number.parseInt(configService.getOrThrow('redis.port', {
-            infer: true,
-          })),
-          password: configService.getOrThrow('redis.password', {
-            infer: true,
-          }),
-          tls: configService.get('redis.tlsEnabled', { infer: true })
-        }
-      };
-    },
+    useFactory: (configService: ConfigService<AllConfigType>) => ({
+      connection: {
+        host: configService.getOrThrow('redis.host', { infer: true }),
+        port: parseInt(configService.getOrThrow('redis.port', { infer: true })),
+        password: configService.get('redis.password', { infer: true }) || undefined,
+        tls: configService.get('redis.tlsEnabled', { infer: true }) ? {} : undefined,
+      },
+    }),
     inject: [ConfigService],
   });
 
@@ -104,27 +96,7 @@ function generateModulesSet() {
     useFactory: loggerFactory,
   });
 
-  const cacheModule = CacheModule.registerAsync({
-    imports: [ConfigModule],
-    useFactory: async (configService: ConfigService<AllConfigType>) => {
-      return {
-        store: await redisStore({
-          host: configService.getOrThrow('redis.host', {
-            infer: true,
-          }),
-          port: configService.getOrThrow('redis.port', {
-            infer: true,
-          }),
-          password: configService.getOrThrow('redis.password', {
-            infer: true,
-          }),
-          tls: configService.get('redis.tlsEnabled', { infer: true }),
-        }),
-      };
-    },
-    isGlobal: true,
-    inject: [ConfigService],
-  });
+
 
   const modulesSet = process.env.MODULES_SET || 'monolith';
 
@@ -134,38 +106,40 @@ function generateModulesSet() {
         ApiModule,
         bullModule,
         BackgroundModule,
-        cacheModule,
         dbModule,
         i18nModule,
         loggerModule,
         MailModule,
         EventEmitterModule.forRoot(),
-        EventsModule
+        EventsModule,
+        RedisModule,
+
       ];
       break;
     case 'api': //không có background module
       customModules = [
         ApiModule,
         bullModule,
-        cacheModule,
         dbModule,
         i18nModule,
         loggerModule,
         MailModule,
         EventEmitterModule.forRoot(),
-        EventsModule
+        EventsModule,
+        RedisModule,
       ];
       break;
     case 'background'://không có api module và mail module
       customModules = [
         bullModule,
         BackgroundModule,
-        cacheModule,
         dbModule,
         i18nModule,
         loggerModule,
         EventEmitterModule.forRoot(),
-        EventsModule
+        EventsModule,
+        RedisModule,
+
       ];
       break;
     default:

@@ -9,7 +9,6 @@ import { MessageEntity } from './entities/message.entity';
 import {
   MemberRole,
   MessageContentType,
-  MessageViewStatus,
   RoomType,
 } from '@/constants/entity.enum';
 import { CursorPaginatedDto } from '@/common/dto/cursor-pagination/paginated.dto';
@@ -26,12 +25,15 @@ import { MessageResDto } from './dto/message.res.dto';
 import { SortEnum } from '@/constants/sort.enum';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { CloudinaryResponse } from 'src/cloudinary/cloudinary/cloudinary-response';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
 import { createCacheKey } from '@/utils/cache.util';
 import { CacheKey } from '@/constants/cache.constant';
 import { SendTextMsgReqDto } from './dto/send-text-msg.req.dto';
 import { LoadMessagesFromReqDto } from './dto/load-messages-from.req.dto';
+import { RedisService } from '@/redis/redis.service';
+import { RelationService } from '../relationship/relation.service';
+import { RelationStatus } from '@/constants/entity-enum/relation.enum';
+import { ChatRoomService } from '../chat-room/chat-room.service';
+import { DetailMessageReqDto } from './dto/get-detail-message-req.dto';
 
 @Injectable()
 export class MessageService {
@@ -44,10 +46,11 @@ export class MessageService {
     private readonly chatRoomRepository: Repository<ChatRoomEntity>,
     @InjectRepository(MessageEntity)
     private readonly messageRepository: Repository<MessageEntity>,
+    private readonly redisService: RedisService,
+    private readonly chatRoomService: ChatRoomService,
+    private relationService: RelationService,
     private eventEmitter: EventEmitter2,
     private cloundService: CloudinaryService,
-    @Inject(CACHE_MANAGER)
-    private readonly cacheManager: Cache,
   ) {}
 
   async sendMessage(
@@ -116,12 +119,12 @@ export class MessageService {
     const userClientKeys = members.map((m) =>
       createCacheKey(CacheKey.USER_CLIENT, m.userId),
     );
-    const userCacheIds = await this.cacheManager.store.mget(...userClientKeys);
+    const userCacheIds = await this.redisService.mget(...userClientKeys);    
+    
     let onlineMembers = [];
     let offineMembers = [];
     userCacheIds.forEach((id, index) => {
       if (id) {
-        //member.msgRTime = new Date(createdAt).getMilliseconds()
         onlineMembers.push(members[index]);
       } else {
         offineMembers.push(members[index]);
@@ -149,7 +152,7 @@ export class MessageService {
   }
 
   async sendTextMsg(roomId: Uuid, data: SendTextMsgReqDto, meId: Uuid) {
-    //Kiểm tra phòng có tồn tại ko
+    //Kiểm tra phòng có tồn tại ko    
     const room = await this.chatRoomRepository.findOneOrFail({
       where: { id: roomId },
       select: ['id', 'members'],
@@ -168,6 +171,7 @@ export class MessageService {
       sender: member,
       roomId,
       type: MessageContentType.TEXT,
+      createdAt: new Date(),
       createdBy: meId,
       updatedBy: meId,
     });
@@ -179,29 +183,22 @@ export class MessageService {
       where: { id: newMessage.id },
       relations: ['replyMessage', 'sender'],
     });
-    const { onlineMembers, offlineMembers } =
-      await this.getMemberOnAndOfByRoomId(room, meId);
-    console.log('on', onlineMembers);
-
-    // Gửi thông báo sự kiện
-
-    const msgData = {
-      ...newMsg,
-      receivedMemberIds: onlineMembers.map((m) => m.id),
-    };
+    const { onlineUsersRoom, offlineUsersRoom } =
+      await this.chatRoomService.getUserIdsStatusRoom(room.id);
+    
     this.eventEmitter.emit(EventEmitterKey.NEW_MESSAGE, {
       id: newMsg.id,
       content: data.content,
       type: MessageContentType.TEXT,
       isSelfSent: member.id == meId,
       roomId,
-      onlineMembers,
-      offlineMembers,
-      msgData,
+      onlineUsersRoom: onlineUsersRoom,
+      offlineUsersRoom: offlineUsersRoom,
+      msgData: newMsg,
       createdAt: new Date(),
     });
 
-    return plainToInstance(MessageResDto, msgData);
+    return plainToInstance(MessageResDto, newMsg);
   }
 
   async loadMoreMessage(
@@ -373,10 +370,36 @@ export class MessageService {
     return queryBuilder;
   }
 
+  async findDetail(
+    roomId: string, // Uuid trong TypeORM thường là string
+    reqDto: DetailMessageReqDto
+  ): Promise<{ id: string; username: string; avatar: string }[]> {
+    const users = await this.userRepository
+      .createQueryBuilder('user')
+      .innerJoin('member', 'm', 'm.user_id = user.id') 
+      .where('m.room_id = :roomId', { roomId }) 
+      .andWhere(
+        // Điều kiện: isOnline = true HOẶC lastOnline > createdAt
+        'user.isOnline = :isOnline OR user.lastOnline > :createdAt',
+        { isOnline: true, createdAt: reqDto.messageCraetedAt }
+      )
+      .select([
+        'user.id AS id',
+        'user.username AS username',
+        'user.avatar AS avatar', // Giả sử cột avatar là 'avatar'
+      ])
+      .getRawMany();
+
+    return users;
+  }
+
   findAll() {
     return `This action returns all message`;
   }
-
+  findMany(ids: Uuid[]) {
+    
+    return `This action returns a #${ids} message`;
+  }
   findOne(id: number) {
     return `This action returns a #${id} message`;
   }
@@ -427,38 +450,13 @@ export class MessageService {
     return room;
   }
 
-  private async getMemberOnAndOfByRoomId(
-    room: ChatRoomEntity,
-    senderId: Uuid,
-  ): Promise<any> {
-    //lọc danh sách member online và offline
-    const members = room.members.filter((member) => member.userId != senderId);
-    const clientIdKeys = members.map((m) =>
-      createCacheKey(CacheKey.USER_CLIENT, m.userId),
-    );
-    const cientCacheIds = await this.cacheManager.store.mget(...clientIdKeys);
-    const userIdKeys = cientCacheIds.map((m) =>
-      createCacheKey(CacheKey.MSG_SOCKET_CONNECT, m as string),
-    );
-    const userCacheIds = await this.cacheManager.store.mget(...userIdKeys);
-
-    let onlineMembers = [];
-    let offlineMembers = [];
-    userCacheIds.forEach((id, index) => {
-      if (id) {
-        if (members[index]) {
-          onlineMembers.push(members[index]);
-        }
-      } else {
-        if (members[index]) {
-          offlineMembers.push(members[index]);
-        }
-      }
-    });
-
-    return {
-      onlineMembers,
-      offlineMembers,
-    };
+  async getFriendOnAndOfByUserId(
+    userId: Uuid,
+  ): Promise<{ onlineFriends: string[]; offlineFriends: string[] }> {
+    const friends = await this.relationService.getAllRelations(userId as Uuid, RelationStatus.FRIEND);
+    const onlineFriends = await this.redisService.smembers(`online_friends:${userId}`);
+    const offlineFriends = friends.filter((friendId) => !onlineFriends.includes(friendId));
+  
+    return { onlineFriends, offlineFriends };
   }
 }

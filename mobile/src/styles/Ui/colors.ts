@@ -2,7 +2,7 @@ export const colors = {
     primary: '#EE4D2D',
     primary_light: '#FF8A65',
     primary_icon: '#EE4D2D',
-    secondary: '#004E6D',
+    secondary: '#2196F3',
     secondary_dark: '#001A2D',
     secondary_light: '#7BA6B3',
     secondary_bright: '#0088FF',

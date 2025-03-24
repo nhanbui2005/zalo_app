@@ -18,9 +18,9 @@ import {iconSize} from '~/styles/Ui/icons';
 import {useNavigation} from '@react-navigation/native';
 import {MainNavProp, StackNames} from '~/routers/types';
 import {imagesStyle} from '~/styles/Ui/image';
-import {relationApi} from '~/features/relation/relationService';
 import {RelationStatus} from '~/features/relation/dto/relation.dto.enum';
 import {UserBase} from '~/features/user/dto/user.dto.nested';
+import { relationApi } from '~/features/relation/relationApi';
 
 const GroupTab = ({ onScrollY }) => {
   const mainNav = useNavigation<MainNavProp>();
@@ -49,7 +49,7 @@ const GroupTab = ({ onScrollY }) => {
   const renderFriend = (item: UserBase) => (
     <TouchableOpacity
       style={[styles.userItem, {gap: 10, backgroundColor: 'white'}]}
-      onPress={() => mainNav.navigate(StackNames.ChatScreen, {id: item.id})}>
+      onPress={() => mainNav.navigate(StackNames.ChatScreen)}>
       <Image source={{uri: item.avatarUrl}} style={imagesStyle.avatar_50} />
       <Text style={textStyle.body_md}>{item.username}</Text>
     </TouchableOpacity>

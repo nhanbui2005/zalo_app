@@ -6,10 +6,12 @@ const SocketContext = createContext();
 export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider = ({ namespace, children }) => {
+  
   useEffect(() => {    
     connectSocket(namespace);
 
     return () => {
+      console.log('disconnect');
       disconnectSocket(namespace);
     };
   }, [namespace]);

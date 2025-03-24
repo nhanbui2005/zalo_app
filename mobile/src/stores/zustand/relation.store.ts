@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { Relation } from '~/features/relation/dto/relation.dto.nested';
 import { RelationStatus } from '~/features/relation/dto/relation.dto.enum';
-import { relationApi } from '~/features/relation/relationService';
+import { relationApi } from '~/features/relation/relationApi';
+import { get } from 'react-native/Libraries/TurboModule/TurboModuleRegistry';
 
 interface RelationState {
   relations_Friend: Relation[];
@@ -21,6 +22,7 @@ export const useRelationStore = create<RelationState>((set) => ({
   fetchRelations: async (status: RelationStatus) => {
     try {
       const data = await relationApi.getRelations(status);
+      
       if (!data || !Array.isArray(data)) return;
       if (status === RelationStatus.FRIEND) {
         set({
@@ -31,6 +33,7 @@ export const useRelationStore = create<RelationState>((set) => ({
           relations_Pending: data,
         });
       }
+      
     } catch (error) {
       console.error('Failed to fetch relations:', error);
     }

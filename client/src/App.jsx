@@ -7,14 +7,6 @@ import { loadMoreMsgWhenConnect, updateLastMsgForRoom } from './redux/slices/roo
 export default function App() {
   const dispatch = useDispatch()
   const meId = useSelector((state) => state.user.id)
-  // const currentRoomId = useSelector(state => state.currentRoom.roomId)
-
-  useSocketEvent('received_relation_req', (data) => {
-    console.log('Đã nhận được lời mời kết bạn', data)
-  })
-  useSocketEvent('accept_relation_req', (data) => {
-    console.log('Lời mời kết bạn đã được chấp nhận', data)
-  })
 
   useSocketEvent('load_more_msgs_when_connect', (data) => {
     console.log('after connect', data)

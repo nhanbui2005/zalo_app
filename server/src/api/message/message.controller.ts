@@ -10,13 +10,28 @@ import { MessageResDto } from './dto/message.res.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SendTextMsgReqDto } from './dto/send-text-msg.req.dto';
 import { LoadMessagesFromReqDto } from './dto/load-messages-from.req.dto';
+import { DetailMessageReqDto } from './dto/get-detail-message-req.dto';
+import { RedisService } from '@/redis/redis.service'
+import { createCacheKey } from '@/utils/cache.util';
+import { CacheKey } from '@/constants/cache.constant';
+
 @ApiTags('messages')
 @Controller({
     path: 'messages',
     version: '1',
 })
 export class MessageController {
-  constructor(private readonly messageService: MessageService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly messageService: MessageService
+  ) {}
+
+  @Post('save-fcm-token')
+  async saveFCMToken(@Body() body: { userId: string; token: string }) {
+    const { userId, token } = body;
+    await this.redisService.set(createCacheKey(CacheKey.FCM_TOKEN, userId), token, 604800); 
+    return { message: 'FCM token saved' };
+  }
 
   @Post()
   @UseInterceptors(
@@ -47,6 +62,14 @@ export class MessageController {
   ) {
     return this.messageService.sendTextMsg(roomId, dto, id);
   }
+  @Get('/detail')
+  findDetail(
+    @Param('messageId') id: Uuid,
+    @Body() dto: DetailMessageReqDto
+  ) {
+    return this.messageService.findDetail(id, dto);
+  }
+
 
   @Get()
   findAll(

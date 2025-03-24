@@ -4,14 +4,12 @@ import axios, {
   AxiosError,
   InternalAxiosRequestConfig,
 } from 'axios';
-import { useSelector } from 'react-redux';
-import { authSelector } from '~/features/auth/authSlice';
 import store from '~/stores/redux/store';
 import {ACCESS_TOKEN} from '~/utils/Constants/authConstant';
 import localStorage from '~/utils/localStorage';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://192.168.1.10:7777/api/v1/',//pham thi thi 5g
+  baseURL: 'http://192.168.1.10:7777/api/v1/',//pham thi thi 5g 192.168.1.24
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

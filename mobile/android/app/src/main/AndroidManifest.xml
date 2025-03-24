@@ -1,15 +1,32 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
 
     <application
       android:name=".MainApplication"
-      android:label="@string/app_name"
+      android:label=""
       android:icon="@mipmap/ic_launcher"
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true">
+
+      <service android:name="com.reactnativebackgroundactions.BackgroundService" />
+
+      <receiver android:name="com.dieam.reactNativePushNotification.modules.RNPushNotificationPublisher" />
+      <receiver 
+          android:name="com.dieam.reactNativePushNotification.modules.RNPushNotificationBootEventReceiver"
+          android:exported="false">
+          <intent-filter>
+              <action android:name="android.intent.action.BOOT_COMPLETED" />
+          </intent-filter>
+      </receiver>
+
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
@@ -29,7 +46,7 @@
       <meta-data
         android:name="com.google.android.gms.client_id"
         android:value="813157104392-e7cp0485rpo8178pp8i07p0evurcuq88.apps.googleusercontent.com
-.apps.googleusercontent.com" />
+        .apps.googleusercontent.com" />
 
     </application>
 </manifest>

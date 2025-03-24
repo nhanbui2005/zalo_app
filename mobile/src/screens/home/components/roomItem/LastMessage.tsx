@@ -12,7 +12,7 @@ type Props = {
 }
 
 const LastMessage: React.FC<Props> = ({ isGroup, unReadCount, lastMessage }) => {  
-  const user = lastMessage.sender.user
+  
   const messageTypes: Record<MessageContentType, string> = {
     [MessageContentType.TEXT]: "[Text]",
     [MessageContentType.IMAGE]: "[Image]",
@@ -23,10 +23,10 @@ const LastMessage: React.FC<Props> = ({ isGroup, unReadCount, lastMessage }) => 
 
   return (
     <View style={styles.container}>
-      <View style={viewStyle.container_row}>
+      <View style={[viewStyle.container_row]}>
         {isGroup && (
             <Text style={styles.username}>
-            {user.username + ' : '}
+            {lastMessage.senderName + ' : '}
             </Text>
         )}
 

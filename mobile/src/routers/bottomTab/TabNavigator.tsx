@@ -9,17 +9,12 @@ import { colors } from '../../styles/Ui/colors';
 import { Assets } from '../../styles/Ui/assets';
 import { textStyle } from '../../styles/Ui/text';
 import { iconSize } from '../../styles/Ui/icons';
-import useSocketEvent from '~/hooks/useSocket ';
-import { useSelector } from 'react-redux';
-import { appSelector } from '~/features/app/appSlice';
-import { useRoomStore } from '~/stores/zustand/room.store';
-import { useChatStore } from '~/stores/zustand/chat.store';
 import { _MessageSentRes } from '~/features/message/dto/message.dto.parent';
+import { useStateStore } from '~/stores/zustand/state.store';
 
 type RouteName = 'HomeTab' | 'ContactsTab' | 'DinaryTab' | 'PersonalTab';
 
 const TabNavigator = () => {
-  
   const labels: Record<RouteName, string> = {
     HomeTab: 'Tin nhắn',
     ContactsTab: 'Danh bạ',
@@ -29,8 +24,8 @@ const TabNavigator = () => {
 
   const Tab = createBottomTabNavigator();
   const [unreadCount, setUnreadCount] = useState(3);
-
   const animationRef = useRef(new Animated.Value(0)).current;
+
 
   const getTabIcon = (routeName: RouteName, focused: boolean) => {
     const icons: Record<RouteName, any> = {
@@ -46,7 +41,7 @@ const TabNavigator = () => {
           style={[iconSize.medium, {marginTop: 20}]}
           source={icons[routeName]}
         />
-        <Text style={[textStyle.Notification, { bottom: 30,left: 15,}]}>{unreadCount}</Text>
+        <Text style={[textStyle.Notification, { bottom: 30, left: 15}]}>{unreadCount}</Text>
       </Animated.View>
     );
   };
@@ -80,13 +75,14 @@ const TabNavigator = () => {
         tabBarIcon: ({ focused }) => {
           if (focused) {
             animationRef.setValue(0);
-            
             Animated.spring(animationRef, {
               toValue: -10,
               friction: 3,
               tension: 40,
               useNativeDriver: true,
             }).start();
+            // Set exceptNotification based on the route
+            // setExceptNotification(route.name === 'HomeTab');
           }
           return getTabIcon(route.name as RouteName, focused);
         },

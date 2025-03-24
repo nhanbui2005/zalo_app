@@ -66,8 +66,7 @@ const initialState = {
   roomId:'',
     partnerId:'',
     memberId: '',
-    roomAvatarUrl: '',
-    roomAvatarUrls: '',
+    roomAvatar: '',
     roomName: '',
     isGroup: false,
     members:[],
@@ -88,10 +87,9 @@ const currentRoomSlice = createSlice({
   initialState: initialState,
   reducers: {
     setCurrentRoom: (state, action) => {      
-      const {id,roomAvatarUrl,roomAvatarUrls,roomName,type,memberCount} = action.payload
+      const {id,roomAvatar,roomName,type,memberCount} = action.payload
       state.roomId = id
-      state.roomAvatarUrl = roomAvatarUrl
-      state.roomAvatarUrls = roomAvatarUrls
+      state.roomAvatar = roomAvatar
       state.roomName = roomName
       state.type = type
       state.memberCount = memberCount
@@ -99,7 +97,7 @@ const currentRoomSlice = createSlice({
     setPartnerId: (state, action) => {
       const {partnerId, partnerAvatarUrl} = action.payload
       state.partnerId = partnerId
-      state.roomAvatarUrl = partnerAvatarUrl
+      state.roomAvatar = partnerAvatarUrl
       state.roomName = roomName
     },
     loadMoreMessage: () => {
@@ -151,9 +149,9 @@ const currentRoomSlice = createSlice({
       state.isLoading = true
     })
     .addCase(getRoomByPartnerId.fulfilled, (state, action) => {
-      const {memberId, members, roomAvatarUrl, roomName, id} = action.payload
+      const {memberId, members, roomAvatar, roomName, id} = action.payload
       state.roomId = id
-      state.roomAvatarUrl = roomAvatarUrl
+      state.roomAvatar = roomAvatar
       state.roomName = roomName
       state.memberId = memberId
       state.members = members
@@ -165,9 +163,9 @@ const currentRoomSlice = createSlice({
       state.isLoading = false
     })
     .addCase(getRoomById.fulfilled, (state, action) => {
-      const {memberId, members, roomAvatarUrl, roomName, id} = action.payload
+      const {memberId, members, roomAvatar, roomName, id} = action.payload
       state.roomId = id
-      state.roomAvatarUrl = roomAvatarUrl
+      state.roomAvatar = roomAvatar
       state.roomName = roomName
       state.memberId = memberId
       state.members = members

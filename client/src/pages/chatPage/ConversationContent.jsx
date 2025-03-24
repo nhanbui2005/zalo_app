@@ -4,7 +4,6 @@ import { Assets } from '../../assets'
 import { useDispatch, useSelector } from 'react-redux'
 import SquareIcon from '../../components/icon/squareIcon'
 import useSocketEvent from '../../hooks/useSocket'
-import { useSocket } from '../../socket/SocketProvider'
 import Utils from '../../utils/utils'
 import {
   addNewMgs,
@@ -20,7 +19,7 @@ import {
 import { useLocation, useParams } from 'react-router-dom'
 import { emitEvent } from '../../socket/socket'
 import { useCallback } from 'react'
-import { setViewAllMsg, updateLastMsgForRoom } from '../../redux/slices/roomSlice'
+import { setViewAllMsg } from '../../redux/slices/roomSlice'
 
 const ConversationContent = () => {
   const dispatch = useDispatch()
@@ -31,97 +30,8 @@ const ConversationContent = () => {
   const { id } = useParams()
 
   const [isLoading, setIsLoading] = useState(true)
-  // const [roomId, setRoomId] = useState(null)
   const roomId = useSelector((state) => state.currentRoom.roomId)
-  // let membersObj = {}
-  // members.forEach((mem) => {
-  //   membersObj[mem.id] = mem
-  // })
-  console.log('re-render-ConversationContent')
 
-  // useSocketEvent('load_more_msgs_when_connect', (data) => {
-  //   console.log('after connect', data)
-  // })
-  // useSocketEvent('received_msg', (data) => {
-  //   console.log('received_msg', data)
-  //   dispatch(setReceiver(data))
-  // })
-  // const SendMessage = async ({ content, files, type, roomId }) => {
-  //   try {
-  //     let newMessage
-  //     const send = async (formData) => {
-  //       newMessage = await messageAPI.sentMessage(formData)
-  //       newMessage.isSelfSent = true
-  //     }
-
-  //     switch (type) {
-  //       case 'text':
-  //         break
-  //       case 'file':
-  //         break
-  //       case 'image':
-  //         break
-  //       case 'video':
-  //         break
-  //       default:
-  //         break
-  //     }
-
-  //     if (files && files.length > 0) {
-  //       for (const file of files) {
-  //         const form = new FormData()
-  //         if (partnerId) {
-  //           form.append('receiverId', partnerId)
-  //         }
-  //         form.append('roomId', roomId)
-  //         form.append('contentType', 'image')
-  //         form.append('file', file)
-  //         await send(form)
-  //       }
-  //     } else {
-  //       const formData = new FormData()
-  //       if (partnerId) {
-  //         formData.append('receiverId', partnerId)
-  //       } else {
-  //         formData.append('roomId', roomId)
-  //       }
-  //       formData.append('contentType', 'text')
-  //       formData.append('content', content)
-  //       if (msgRep) {
-  //         formData.append('replyMessageId', msgRep.id)
-  //       }
-  //       await send(formData)
-  //     }
-
-  //     scrollToBottom()
-  //     setTextContent('')
-  //     dispatch(
-  //       updateLastMsgForRoom({
-  //         roomId: roomId,
-  //         lastMsg: {
-  //           content: newMessage.content,
-  //           type: newMessage.type,
-  //           createdAt: newMessage.createdAt,
-  //           isSelfSent: newMessage.isSelfSent,
-  //         },
-  //       })
-  //     )
-  //     setMsgRep(null)
-  //   } catch (error) {}
-  // }
-
-  //load message
-
-  // useEffect(() => {
-  //   if (room?.type == RoomTypeEnum.GROUP) {
-  //     const leader = members.filter((m) => m.role == RoomRoleEnum.LEADER)[0]
-  //     if (leader) {
-  //       setLeader(leader)
-  //     }
-  //   }
-  // }, [])
-
-  //-------------------------------------------------
   useEffect(() => {
     //rời phòng chat và dọn dẹp dữ liệu cũ
     dispatch(resetRoom())
@@ -162,13 +72,13 @@ const ConversationContent = () => {
 
 const Header = () => {
   const roomName = useSelector((state) => state.currentRoom.roomName)
-  const roomAvatarUrl = useSelector((state) => state.currentRoom.roomAvatarUrl)
+  const roomAvatar = useSelector((state) => state.currentRoom.roomAvatar)
   return (
     <div className="flex h-20 flex-row items-center p-4">
       <div className="flex w-full flex-row items-center">
         <img
           className="size-12 rounded-full"
-          src={roomAvatarUrl}
+          src={roomAvatar}
           alt="Placeholder"
         />
         <div className="mx-3 flex w-full flex-col justify-between py-1">

@@ -1,8 +1,8 @@
 import React, { useRef } from 'react';
 import { Animated } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import FriendTab from './FriendTab';
 import GroupTab from './GroupTab';
+import FriendTab from './friend/FriendTab';
 
 const Tab = createMaterialTopTabNavigator();
 

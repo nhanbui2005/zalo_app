@@ -4,12 +4,16 @@ import { io, Socket } from "socket.io-client";
 const sockets: Record<string, Socket> = {}; 
 
 export const connectSocket = (namespace: string, accesstoken: string): Socket => {
+
   if (!sockets[namespace]) {   
     sockets[namespace] = io(`http://192.168.1.10:7777/${namespace}`, {
       transports: ["websocket"],
       auth: {
         token: `Bearer ${accesstoken ?? ""}`,
       },
+      reconnectionAttempts: Infinity, 
+      reconnectionDelay: 5000,
+      // reconnection: true
     });
 
     sockets[namespace].on("connect", () => {
@@ -26,11 +30,17 @@ export const connectSocket = (namespace: string, accesstoken: string): Socket =>
 
 export const disconnectSocket = (namespace: string): void => {
   if (sockets[namespace]) {
-    sockets[namespace].removeAllListeners(); // ✅ Xóa hết sự kiện tránh rò rỉ bộ nhớ
+    sockets[namespace].removeAllListeners(); 
     sockets[namespace].disconnect();
     delete sockets[namespace];    
   }
 };
+
+export const clearSocker = (namespace: string): void => {
+  if (sockets[namespace]) {
+    sockets[namespace].removeAllListeners(); 
+  }
+}
 
 export const emitEvent = (namespace: string, event: string, data: any): void => {
   if (sockets[namespace]?.connected) {  // ✅ Kiểm tra socket đã kết nối chưa

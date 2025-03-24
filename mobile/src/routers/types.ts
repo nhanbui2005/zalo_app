@@ -26,10 +26,10 @@ export const StackNames = {
 export type MainNavProp = NativeStackNavigationProp<MainStackParamList, 'Main'>;
 
 
-export type TabParamList = {
-  HomeTab: undefined;
-  ContactsTab: undefined;
-  DiaryTab: undefined;
-  PersonalTab: undefined;
+export type TabNames = {
+  HomeTab: "Home";
+  ContactsTab: "Contacts";
+  DiaryTab: "Diary";
+  PersonalTab: "Personal";
 };
 

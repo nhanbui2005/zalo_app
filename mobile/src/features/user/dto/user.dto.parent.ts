@@ -8,7 +8,17 @@ export interface UserSearchRes {
     inviter: InviterTypeEnum,
     user: UserSearch
 }
-
-export interface UserSendAddFriend {
-  
+export interface _UserRes {
+    id: string;
+    username: string;
+    email: string;
+    gender: string;
+    dob: string;
+    bio?: string;
+    avatarUrl: string;
+    avatarPid: string;
+    coverUrl: string;
+    coverPid: string;
+    createdAt: Date;
+    updatedAt: Date;
 }

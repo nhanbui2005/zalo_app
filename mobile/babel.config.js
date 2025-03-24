@@ -1,9 +1,11 @@
-
 module.exports = {
-  presets: ['module:@react-native/babel-preset'],
+  presets: [
+    'module:@react-native/babel-preset', 
+  ],
   plugins: [
-    ["@babel/transform-runtime"],
-    ["module-resolver", { "alias": { "~": "./src" } }],
-    ['react-native-reanimated/plugin'], 
+    ['@babel/plugin-proposal-decorators', { legacy: true }],
+    ['@babel/transform-runtime'],
+    ['module-resolver', { alias: { '~': './src' } }],
+    ['react-native-reanimated/plugin'],
   ],
 };

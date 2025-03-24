@@ -1,7 +1,6 @@
 // src/features/auth/authSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { loginGoogleResponse } from './authDto';
-import { UserEntity } from '../user/userEntity';
 
 interface AuthState {
   accessToken: string | null;

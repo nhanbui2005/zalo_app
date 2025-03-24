@@ -94,9 +94,16 @@ export class UserController {
   @Roles(Role.USER, Role.SUPER_ADMIN, Role.ADMIN)
   async findAllUsers(
     @Query() reqDto: ListUserReqDto,
-    @Req() req: any,
   ): Promise<OffsetPaginatedDto<UserResDto>> {
     return await this.userService.findAll(reqDto);
+  }
+
+  
+  @Get('/friends')
+  async findAllUserFriends(
+    @CurrentUser('id') myId: Uuid
+  ): Promise<UserResDto[]> {
+    return await this.userService.findAllUserFriends(myId);
   }
 
   @Get('/load-more')

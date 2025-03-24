@@ -4,10 +4,10 @@ import { ArrayMinSize, IsUUID } from "class-validator";
 
 export class CreateGroupReqDto {
   @StringFieldOptional()
-  groupName?: string
+  roomName?: string
 
   @StringFieldOptional()
-  groupAvatar?: string
+  roomAvatar?: string
 
   @ArrayMinSize(2)
   @IsUUID('all', { each: true }) 

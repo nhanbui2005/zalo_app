@@ -8,7 +8,10 @@
     "esModuleInterop": true, // Cho phép dễ dàng nhập các module  
     "skipLibCheck": true, // Bỏ qua kiểm tra các định nghĩa thư viện bên ngoài  
     "strict": true, // Bật chế độ kiểm tra nghiêm ngặt loại (có thể tùy chỉnh theo nhu cầu)  
-    "noImplicitAny": false // Nếu muốn tránh lỗi không làm rõ loại  
+    "noImplicitAny": false, // Nếu muốn tránh lỗi không làm rõ loại  
+
+    "experimentalDecorators": true,  // Bật decorator
+    "emitDecoratorMetadata": true,   // Cần cho metadata của decorator
   },  
   "exclude": [  
     "node_modules",  

@@ -17,18 +17,25 @@ import {useSelector} from 'react-redux';
 import {appSelector} from '~/features/app/appSlice';
 import {useSocket} from '~/socket/SocketProvider';
 import {useChatStore} from '~/stores/zustand/chat.store';
+import { _MessageSentReq } from '~/features/message/dto/message.dto.parent';
+import MessageRepository from '~/database/repositories/MessageRepository';
+import RoomRepository from '~/database/repositories/RoomRepository';
+import { database } from '~/database';
+import { MessageService } from '~/features/message/messageService';
 
 interface BottomSheetProps {
+  roomId: string,
   onTextChange: (text: string) => void;
   onEmojiChange: (text: string) => void;
 }
 
 const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
-  ({onTextChange, onEmojiChange}) => {
+  ({roomId, onTextChange, onEmojiChange}) => {
+    const messageRepo = new MessageRepository()
+    const roomRepo = new RoomRepository();
     const inputRef = useRef<TextInput>(null);
-    const {sendMessage} = useChatStore();
     const {emit} = useSocket();
-    const {currentRoomId} = useSelector(appSelector);
+    const { curentMessageRepling,memberWriting } = useChatStore();
     const [text, setText] = useState('');
     const [keyboard, setKeyboard] = useState(false);
     const [renderEmojis, setRenderEmojis] = useState(false);
@@ -39,10 +46,10 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
     //listen to emit writing
     useEffect(() => {      
       if (text && !isWriting) {
-        emit('writing-message', {roomId: currentRoomId, status: true});
+        emit('writing-message', {roomId: roomId, status: true});
         setIsWriting(true);
       } else if (text == '' && isWriting) {
-        emit('writing-message', {roomId: currentRoomId, status: false});
+        emit('writing-message', {roomId: roomId, status: false});
         setIsWriting(false);
       }
     }, [text]);
@@ -99,7 +106,17 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
       handleAnimation(newText);
     }, []);
     const handleSendMessage = async () => {
-      sendMessage(text);
+      console.log(roomId);
+      
+      if (!roomId) return
+      const dto = {
+        roomId: roomId,
+        content: text,
+        contentType: curentMessageRepling?.id
+      } as _MessageSentReq
+      console.log(dto);
+      
+      await MessageService.SentMessage(dto, roomRepo, messageRepo)
       setText('');
     };
 
