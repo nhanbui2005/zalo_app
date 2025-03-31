@@ -13,7 +13,7 @@ import { SessionEntity } from './session.entity';
 import { RoleEntity } from './role.entity';
 import { RelationEntity } from '@/api/relationship/entities/relation.entity';
 import { Gender } from '@/constants/entity.enum';
-import { MemberEntity } from '@/api/message/entities/member.entity';
+import { MemberEntity } from '@/api/members/entities/member.entity';
 
 const DEFAULT_AVATAR_URL = 'https://gravatar.com/avatar/6d280e4498beb5ccc61ab02afbd18d78?s=400&d=robohash&r=x'
 @Entity('user')

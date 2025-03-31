@@ -1,6 +1,6 @@
 import React, {useCallback, useRef, useEffect, useState} from 'react';
 import {View, StyleSheet} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useIsFocused, useNavigation} from '@react-navigation/native';
 import {MainNavProp} from '../../routers/types';
 import {colors} from '../../styles/Ui/colors';
 import AppBar from '../../components/Common/AppBar';
@@ -8,10 +8,9 @@ import {
   _MessageSentReq,
   _MessageSentRes,
 } from '~/features/message/dto/message.dto.parent';
-import {MessageViewStatus} from '~/features/message/dto/message.enum';
 import {RoomService} from '~/features/room/roomService';
 import {useChatStore} from '~/stores/zustand/chat.store';
-import {SocketProvider, useSocket} from '~/socket/SocketProvider';
+import {SocketProvider} from '~/socket/SocketProvider';
 import UModal, {UModalRef} from '~/components/Common/modal/UModal';
 import BottomSheetComponent from './components/bottomSheet/__index';
 import ReplyMessageComponent, {
@@ -22,37 +21,43 @@ import MessageListView from './components/listMessages';
 import RoomRepository from '~/database/repositories/RoomRepository';
 import {Room} from '~/features/room/dto/room.dto.nested';
 import {useRoomStore} from '~/stores/zustand/room.store';
+import { emitEvent } from '~/socket/socket';
+import MemberRepository from '~/database/repositories/MemberRepository';
+import { MMKVStore } from '~/utils/storage';
 
-export type DisplayMessage = _MessageSentRes & {
-  isDisplayTime?: boolean;
-  isDisplayHeart?: boolean;
-  isDisplayAvatar?: boolean;
-  isDisplayStatus?: boolean;
-  messageStatus: MessageViewStatus;
-};
+
 const ChatScreen: React.FC = () => {
   const mainNav = useNavigation<MainNavProp>();
-
+  const currentRoomId = MMKVStore.getCurrentRoomId()
   const {curentMessageRepling, clearData} = useChatStore();
-  const {currentRoomId, currentPartnerId, resetCurrentRoomId, setCurrentRoom} = useRoomStore();
+  const {currentPartnerId,setCurrentRoom} = useRoomStore();
   const [room, setRoom] = useState<Room>();
-  const {emit} = useSocket();
 
   const modalRef = useRef<UModalRef>(null);
   const replyingRef = useRef<ReplyMessageRef>(null);
   const messageSelectedRef = useRef<_MessageSentRes>();
   const currenMessageReplyingRef = useRef<any>(curentMessageRepling);
   const inputText = useRef('');
+  const isFocused = useIsFocused();
 
-  useEffect(() => {
-    emit('join-room', {roomId: currentRoomId});
-    
+  useEffect(() => {    
+    if (isFocused) {
+      MMKVStore.setAllowNotification(false); 
+    }
+    return () => {
+      MMKVStore.setAllowNotification(true)
+      MMKVStore.setCurrentRoomId("")
+    };
+  }, [isFocused]);
+
+  useEffect(() => {    
     const setData = async (): Promise<void> => {
       try {
+        const roomRepo = RoomRepository.getInstance()
+        const memberRepo = MemberRepository.getInstance()
         let roomIdTemp: any;
         if (currentRoomId) {
           roomIdTemp = currentRoomId;
-          const roomRepo = new RoomRepository()
           const roomData = await roomRepo.getRoomById(currentRoomId)
           if (roomData) {            
             setRoom(roomData)
@@ -69,7 +74,7 @@ const ChatScreen: React.FC = () => {
               roomAvatar: res.roomAvatar, 
               roomName: res.roomName
             });
-            resetCurrentRoomId(res.id);
+            MMKVStore.setCurrentRoomId(res.id);
             roomIdTemp = res.id;
           }
         }
@@ -79,7 +84,7 @@ const ChatScreen: React.FC = () => {
 
     return () => {
       clearData();
-      emit('leave-room', {roomId: currentRoomId});
+      emitEvent('messages','leave-room', {roomId: currentRoomId});
     };
   }, []);
 
@@ -95,7 +100,7 @@ const ChatScreen: React.FC = () => {
 
   //vào room reset lại unread
   useEffect(() => {
-    const roomRepo = new RoomRepository();
+    const roomRepo = RoomRepository.getInstance();
     if (currentRoomId) roomRepo.resetRoomUnreadCount(currentRoomId);
   }, []);
 

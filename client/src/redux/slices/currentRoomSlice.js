@@ -108,9 +108,16 @@ const currentRoomSlice = createSlice({
         return m.id == memberId ? {...m, msgRTime: receivedAt} : m
       })
     },
-    addNewMgs: (state, action) => {
-      state.messages = [action.payload,...state.messages]
+    addNewMsg: (state, action) => {
+      const newMsg = action.payload;
+    
+      const isExist = state.messages.some(msg => msg.id === newMsg.id);
+    
+      if (!isExist) {
+        state.messages = [newMsg, ...state.messages];
+      }
     },
+    
     setMsgReply: (state, action) => {
       state.msgReply = action.payload
     },
@@ -177,21 +184,10 @@ const currentRoomSlice = createSlice({
 
       state.isLoading = false
     })
-    .addCase(sendTextMsg.fulfilled, (state, action) => {      
-      state.messages = [action.payload,...state.messages]
-      const receivedMemberIds = action.payload.receivedMemberIds      
-      receivedMemberIds.forEach(id => {
-        state.membersObj[id] = {
-          ...state.membersObj[id],
-          msgRTime: action.payload.createdAt
-        }
-      });
-      state.members = state.members.map(m => {
-        return {
-          ...m,
-          ...(receivedMemberIds.includes(m.id) && {msgRTime: action.payload.createdAt})
-        }
-      })
+    .addCase(sendTextMsg.fulfilled, (state, action) => {  
+
+      state.messages = [action.payload,...state.messages]   
+
     })
   }
 });
@@ -199,7 +195,7 @@ const currentRoomSlice = createSlice({
 export const { 
   setCurrentRoom,
   setReceiver,
-  addNewMgs,
+  addNewMsg,
   setMsgReply,
   resetRoom
 } = currentRoomSlice.actions;

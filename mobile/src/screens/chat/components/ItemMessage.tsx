@@ -65,7 +65,6 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
     isDisplayHeart,
     isDisplayAvatar,
     isDisplayStatus,
-    messageStatus,
   } = message;
 
   const {currentRoom} = useRoomStore()
@@ -176,8 +175,8 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
             <Image
               style={styles.avatar}
               source={
-                sender.avatar
-                  ? { uri: sender.avatar }
+                sender?.avatarUrl
+                  ? { uri: sender.avatarUrl }
                   : Assets.images.demo
               }
             />
@@ -312,7 +311,7 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
       {isDisplayStatus && (
         <View style={{ alignSelf: 'flex-end' }}>
           <Text style={styles.status}>
-            {`✓ ${StatusString[messageStatus || status]}`}
+            {`✓ ${StatusString[status]}`}
           </Text>
         </View>
       )}

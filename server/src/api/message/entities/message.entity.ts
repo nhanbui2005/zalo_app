@@ -3,7 +3,7 @@ import { MessageContentType } from "@/constants/entity.enum";
 import { AbstractEntity } from "@/database/entities/abstract.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { ChatRoomEntity } from "../../chat-room/entities/chat-room.entity";
-import { MemberEntity } from "./member.entity";
+import { MemberEntity } from "../../members/entities/member.entity";
 
 @Entity('message')
 export class MessageEntity extends AbstractEntity{

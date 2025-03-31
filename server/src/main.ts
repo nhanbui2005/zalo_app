@@ -46,7 +46,6 @@ async function bootstrap() {
 
   // Sử dụng IoAdapter để NestJS quản lý Socket.IO
   app.useWebSocketAdapter(new IoAdapter(app));
-  console.log('WebSocket adapter initialized');
 
   app.setGlobalPrefix(configService.getOrThrow('app.apiPrefix', { infer: true }), {
     exclude: [

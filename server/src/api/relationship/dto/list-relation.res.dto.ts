@@ -7,6 +7,7 @@ import {
 } from '@/decorators/field.decorators';
 import { Optional } from '@nestjs/common';
 import { Exclude, Expose } from 'class-transformer';
+import { MemberResDto } from './member.res.dto';
 
 // Định nghĩa class RoomDto
 @Exclude()
@@ -39,7 +40,7 @@ export class RelationResDto {
   @Expose()
   handlerId: string;
 
-  @StringFieldOptional()
+  @StringField()
   @Expose()
   status: string;
 
@@ -54,10 +55,18 @@ export class RelationResDto {
   @Optional()
   @ClassField(() => RoomResDto) 
   @Expose()
-  room?: RoomResDto;
+  room: RoomResDto;
+
+  @StringField()
+  @Expose()
+  memberMeId: string;
+
+  @StringField()
+  @Expose()
+  memberId: string;
 
   @Optional()
   @ClassField(() => UserResDto)
   @Expose()
-  user?: UserResDto;
+  user: UserResDto;
 }

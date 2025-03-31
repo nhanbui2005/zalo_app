@@ -98,7 +98,6 @@ const roomSlice = createSlice({
     },
     updateLastMsgForRoomWhenSentMsg: (state, action) => {
       const {roomId, lastMsg} = action.payload
-      console.log('dô');
       
       state.data = state.data.map((room) => {
         return room.id == roomId 

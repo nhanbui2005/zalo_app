@@ -24,12 +24,9 @@ export interface _HandleRequestReq {
     action: RelationAction 
 }
 export interface _HandleRequestRes {
-    id: string,
-    requesterId: string,
-    handlerId: string,
     status: RelationStatus,
-    createdAt: Date,
-    updatedAt: Date,
+    memberMeId?:string,
+    memberId?: string,
     room?: _RoomRes
     user?: _UserRes
 }

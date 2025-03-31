@@ -10,9 +10,7 @@ export default class UserModel extends Model {
   @text('username') username!: string;
   @text('preferred_name') preferredName?: string;
   @text('avatar_url') avatarUrl!: string;
-  @text('avatar_pid') avatarPid!: string;
   @text('cover_url') coverUrl!: string;
-  @text('cover_pid') coverPid!: string;
   @text('gender') gender!: string;
   @text('email') email!: string;
   @field('dob') dob!: number;

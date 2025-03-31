@@ -1,6 +1,6 @@
 // models/Emoji.ts
 import { Model } from '@nozbe/watermelondb';
-import { date, field, text } from '@nozbe/watermelondb/decorators';
+import { field, text } from '@nozbe/watermelondb/decorators';
 
 export default class EmojiModel extends Model {
   static table = 'emojis';
@@ -9,5 +9,5 @@ export default class EmojiModel extends Model {
   @text('member_id') memberId!: string;
   @text('message_id') messageId!: string;
   @text('content') content!: string;
-  @field('created_at') createdAt!: Date;
+  @field('created_at') createdAt!: number;
 }

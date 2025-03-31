@@ -1,4 +1,4 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
 import { UModalRef } from '~/components/Common/modal/UModal';
 import { useMessageListWithInfiniteScroll } from '~/hooks/Ui/useMessageListWithInfiniteScroll';
@@ -12,14 +12,12 @@ const MessageListView = () => {
   const { curentMessageRepling, setCurentMessageRepling } = useChatStore();
   const modalRef = useRef<UModalRef>(null);
   const currenMessageReplyingRef = useRef<any>(curentMessageRepling);
-  const { messages, isLoading, loadMoreMessages, hasMore } = useMessageListWithInfiniteScroll();
-
   const replyingRef = useRef<ReplyMessageRef>(null);
   const messageSelectedRef = useRef<_MessageSentRes>();
+  const { messages, isLoading, loadMoreMessages, hasMore } = useMessageListWithInfiniteScroll();
 
   const handleLongItemPress = (pageY: number, message: any) => {
     messageSelectedRef.current = message;
-
     modalRef.current?.open(
       <ModalContent_MenuMessage
         pageY={pageY}
@@ -44,21 +42,21 @@ const MessageListView = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Danh sách phòng</Text>
-
       {isLoading && messages.length === 0 ? (
         <ActivityIndicator size="large" color="#0000ff" style={styles.loadingContainer} />
       ) : (
         <FlatList
           inverted
           data={messages}
-          onEndReached={hasMore ? loadMoreMessages : undefined}
+          initialNumToRender={20}
+          onEndReached={hasMore ? () => loadMoreMessages() : undefined}
           onEndReachedThreshold={0.4}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={{ paddingHorizontal: 10 }}
           renderItem={({ item }) => (
             <ItemMessage
               key={item.id}
-              message = {item}
+              message={item}
               onLongPress={(pageY) => handleLongItemPress(pageY, item)}
             />
           )}

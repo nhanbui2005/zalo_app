@@ -10,13 +10,15 @@ import { plainToInstance } from 'class-transformer';
 import { OffsetPaginatedDto } from '@/common/dto/offset-pagination/paginated.dto';
 import { MemberRole, MessageViewStatus, RoomLimit, RoomType } from '@/constants/entity.enum';
 import { Uuid } from '@/common/types/common.type';
-import { MemberEntity } from '../message/entities/member.entity';
+import { MemberEntity } from '../members/entities/member.entity';
 import { MessageEntity } from '../message/entities/message.entity';
 import { CreateGroupReqDto } from './dto/create-group.req.dto';
 import { SYSTEM_USER_ID } from '@/constants/app.constant';
 import assert from 'assert';
 import { RedisService } from '@/redis/redis.service';
 import { UserEntity } from '../user/entities/user.entity';
+import { createCacheKey } from '@/utils/cache.util';
+import { CacheKey } from '@/constants/cache.constant';
 const fs = require('fs');
 
 @Injectable()
@@ -418,45 +420,7 @@ export class ChatRoomService {
       .getMany();
     return rooms.map(room => room.id);
   }
-  // async getUserIdsStatusAllRoom(userId: Uuid): Promise<{
-  //   onlineUsersRooms: string[];
-  //   offlineUsersRooms: string[];
-  // }> {
-  //   // Lấy danh sách userId trong các phòng
-  //   const userIdsRooms = await this.getUserIdsOfRoomsByUserId(userId);
 
-  //   // Lấy tất cả roomId mà user tham gia
-  //   const roomIds = await this.getAllRoomIdsByUserId(userId);
-
-  //   // Tập hợp tất cả userId từ các phòng (loại bỏ trùng lặp)
-  //   const allUserIds = new Set<string>();
-  //   Object.values(userIdsRooms).forEach(userIds => {
-  //     userIds.forEach(id => allUserIds.add(id));
-  //   });
-
-  //   // Lấy danh sách userId online từ Redis cho từng phòng
-  //   const onlineUsersRooms = new Set<string>();
-  //   await Promise.all(
-  //     roomIds.map(async (roomId) => {
-  //       const onlineUsers = await this.redisService.smembers(`online_user_room:${roomId}`);
-  //       onlineUsers.forEach(userId => onlineUsersRooms.add(userId));
-  //     })
-  //   );
-
-  //   // Tính danh sách userId offline
-  //   const offlineUsersRooms = new Set<string>();
-  //   allUserIds.forEach(id => {
-  //     if (!onlineUsersRooms.has(id)) {
-  //       offlineUsersRooms.add(id);
-  //     }
-  //   });
-
-  //   // Chuyển Set thành mảng để trả về
-  //   return {
-  //     onlineUsersRooms: Array.from(onlineUsersRooms),
-  //     offlineUsersRooms: Array.from(offlineUsersRooms),
-  //   };
-  // }
   private async getUserIdsRoom(roomId: string): Promise<string[]> {
     const room = await this.roomRepository
       .createQueryBuilder('r')
@@ -481,7 +445,7 @@ export class ChatRoomService {
     }
   
     // Tạo danh sách key để truy vấn Redis
-    const redisKeys = allUserIds.map(userId => `USER_CLIENT:${userId}`);
+    const redisKeys = allUserIds.map(userId => createCacheKey(CacheKey.USER_CLIENT,userId));
   
     // Lấy tất cả socketId trong một lần gọi MGET
     const socketIds = await this.redisService.mget(...redisKeys);

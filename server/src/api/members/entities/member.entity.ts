@@ -4,7 +4,7 @@ import { MemberRole } from "@/constants/entity.enum";
 import { AbstractEntity } from "@/database/entities/abstract.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { ChatRoomEntity } from "../../chat-room/entities/chat-room.entity";
-import { MessageEntity } from "./message.entity";
+import { MessageEntity } from "../../message/entities/message.entity";
 
 @Entity('member')
 export class MemberEntity extends AbstractEntity{

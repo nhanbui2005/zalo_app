@@ -4,8 +4,7 @@ import { Assets } from '../../assets'
 import { useDispatch, useSelector } from 'react-redux'
 import Utils from '../../utils/utils'
 import GroupAvatar from '../../components/GroupAvatar'
-import { addNewMgs } from '../../redux/slices/currentRoomSlice'
-import useSocketEvent from '../../hooks/useSocket'
+import { addNewMsg } from '../../redux/slices/currentRoomSlice'
 import {
   getAllRooms,
   updateLastMsgForRoom,
@@ -13,6 +12,7 @@ import {
 } from '../../redux/slices/roomSlice'
 import { SearchComponent } from '../../components/SearchComponent'
 import { Link } from 'react-router-dom'
+import { onEvent } from '../../socket/socket'
 
 export default function ConversationList() {
   const dispatch = useDispatch()
@@ -23,10 +23,10 @@ export default function ConversationList() {
   const [isSelected, setIsSelected] = useState(items[0])
   const [sortedRooms, setSortedRooms] = useState([])
 
-  useSocketEvent('new_message', (data) => {
+  onEvent('notifications','new_message', (data) => {
     console.log('tin nhắn mới', data)
     if (data.sender.userId !== meId && roomId == data.roomId) {      
-      dispatch(addNewMgs(data))
+      dispatch(addNewMsg(data))
     }
     if (data.sender.userId == meId && roomId == data.roomId) {      
       

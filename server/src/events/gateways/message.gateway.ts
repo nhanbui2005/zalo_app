@@ -4,29 +4,37 @@ import { OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { RedisService } from '@/redis/redis.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MemberEntity } from '../../api/message/entities/member.entity';
+import { MemberEntity } from '../../api/members/entities/member.entity';
 import { Uuid } from '@/common/types/common.type';
 import { CacheKey } from '@/constants/cache.constant';
 import { SocketEmitKey } from '@/constants/socket-emit.constanct';
 import { createCacheKey } from '@/utils/cache.util';
 
+import { MessageService } from '@/api/message/message.service';
+
 
 const CHAT_ROOM = 'CHAT_ROOM_';
-const SOCKET_ROOM = 'socket_room:'
 
-@WebSocketGateway({ namespace: 'messages' })
+@WebSocketGateway({ 
+  namespace: 'messages',
+  pingInterval: 1000,
+  pingTimeout: 2000,
+ })
 export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
+  private typingUsers = new Map<string, Map<string, string>>(); 
 
   constructor(
     private redisService: RedisService,
+    private messageService: MessageService,
     @InjectRepository(MemberEntity)
     private memberRepository: Repository<MemberEntity>,
   ) {}
 
   async handleConnection(@ConnectedSocket()client: Socket) {
-   
+    console.log('nokia');
+    
   }
 
   async handleDisconnect(@ConnectedSocket() client: Socket) {
@@ -48,16 +56,13 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
         // 2. Cập nhật thời gian rời phòng
         await this.memberRepository.update({ id: memberId }, { msgVTime: new Date() });
   
-        // 3. Xóa trạng thái "writing" nếu có
         if (roomId) {
-          const writingMemberId = await this.redisService.get(`writing-msg:${roomId}`);
-          if (writingMemberId === memberId) {
-            await this.redisService.del(`writing-msg:${roomId}`);
-            this.server.to(CHAT_ROOM + roomId).emit(SocketEmitKey.WRITING_MESSAGE, {
-              memberId,
-              status: false,
-            });
+          // 3. Xóa trạng thái "writing" nếu có
+          const usersTyping = this.typingUsers.get(roomId);
+          if (usersTyping) {
+            usersTyping.delete(userId); 
           }
+
           // 5. Rời phòng (đảm bảo client không còn trong phòng)
           client.leave(CHAT_ROOM + roomId);
         }
@@ -68,8 +73,6 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
-    // Finish initializing the socket data (e.g., load pending messages)
-
   @SubscribeMessage('leave-room')
   async handleOutRoom(
     @MessageBody() data: { roomId: string },
@@ -78,54 +81,50 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   ) {
     //rời phòng chat
     client.leave(CHAT_ROOM + data.roomId);
-
+    //member nào ròi
     const memberId = await this.redisService.get(createCacheKey(CacheKey.JOIN_ROOM, client.id));
     //set thời gian rời phòng cho member
     await this.memberRepository.update({id: memberId as Uuid},{msgVTime: new Date()})
-    
+    //xóa khỏi danh sách member trong 1 phòng
     await this.redisService.del(createCacheKey(CacheKey.JOIN_ROOM, client.id));
-    console.log(`client ${client.id} has leave room ${data.roomId}`);
   }
   @SubscribeMessage('writing-message')
   async handleClientMessage(
-    @MessageBody() data: { roomId: string; status: boolean },
+    @MessageBody() data: { roomId: string; memberId: string; userName: string; status: boolean },
     @ConnectedSocket() client: Socket,
   ) {
-    const memberId = await this.redisService.get(createCacheKey(CacheKey.JOIN_ROOM, client.id));
-    const isWriting = await this.redisService.get('writing-msg:' + data.roomId);
-
-    // Lấy userName từ memberId
-    const member = await this.memberRepository.findOne({
-      where: { id: memberId as Uuid },
-      relations: ['user'],
-    });
-    if (!member || !member.user) {
-      return;
+  
+    // Nếu chưa có roomId trong Map, khởi tạo một Map mới
+    if (!this.typingUsers.has(data.roomId)) {
+      this.typingUsers.set(data.roomId, new Map());
     }
-    const userName = member.user.username;
-
-    if (data.status && !isWriting) {
-        await this.redisService.set('writing-msg:' + data.roomId, memberId);
-        this.server.to(CHAT_ROOM + data.roomId).emit(SocketEmitKey.WRITING_MESSAGE, {
-          userName,
-          status: data.status,
-        });
-      } else if (!data.status && isWriting) {
-        await this.redisService.del('writing-msg:' + data.roomId);
-        this.server.to(CHAT_ROOM + data.roomId).emit(SocketEmitKey.WRITING_MESSAGE, {
-          userName, 
-          status: data.status,
-        });
-      }
-    console.log(`member ${memberId} is writing message in room ${data.roomId}`);
+  
+    const usersTyping = this.typingUsers.get(data.roomId)!;
+  
+    if (data.status) {
+      // Thêm user vào danh sách nếu họ đang nhập
+      usersTyping.set(data.memberId, data.userName);
+    } else {
+      // Xóa user khỏi danh sách nếu họ ngừng nhập
+      usersTyping.delete(data.memberId);
+    }
+    
+    // Lấy người đang nhập đầu tiên (nếu có)
+    const firstUserTyping = Array.from(usersTyping.values())[0] || null;
+  
+    // Gửi thông tin về phòng
+    client.broadcast.to(CHAT_ROOM + data.roomId).emit(SocketEmitKey.WRITING_MESSAGE, {
+      userName: firstUserTyping,
+    });
   }
 
   @SubscribeMessage('join-room')
   async handleJoinRoom(
     @MessageBody() data: { roomId: string},
     @ConnectedSocket() client: Socket,
-  ) {        
+  ) {            
     //vào 1 phòng chat
+    
     client.join(CHAT_ROOM + data.roomId);
     const userId: string = await this.redisService.get(createCacheKey(CacheKey.MSG_SOCKET_CONNECT, client.id));    
     const member = await this.memberRepository.findOne({
@@ -144,7 +143,6 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     //set lại thời gian xem tin nhắn
     await this.memberRepository.update({id: member.id}, {msgVTime: new Date()})
-    console.log(`client ${client.id} has join room ${data.roomId}`);
 
     // Gửi danh sách emoji cho client khi join room
     const emojisKey = createCacheKey(CacheKey.EMOJI_MESSAGE, data.roomId);

@@ -23,7 +23,7 @@ const appSlice = createSlice({
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload;
     },
-    setMe: (state,action: PayloadAction<UserEntity>) => {      
+    setMe: (state,action: PayloadAction<UserEntity>) => {            
       state.meData = action.payload      
     },
     setNetworkState: (state, action: PayloadAction<boolean | null>) => {

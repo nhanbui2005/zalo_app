@@ -4,13 +4,17 @@ import { clearSocker, connectSocket, disconnectSocket, isSocketConnected } from 
 import { syncNewMessage, syncPendingMessages } from './features/message/messageSync';
 import { _MessageSentRes } from './features/message/dto/message.dto.parent';
 import MessageRepository from './database/repositories/MessageRepository';
-import { database } from './database';
 import RoomRepository from './database/repositories/RoomRepository';
+import { syncWhenAcceptRequest } from './features/relation/relationService';
+import { HandleAcceptReqDataSocket } from './socket/types/relation';
+import { keyMMKVStore, MMKVStore, storage } from './utils/storage';
+import { messageEntity } from './features/message/messageEntity';
 
 // Hàm chạy trong background
 const backgroundSocketTask = async (taskData) => {
-  const messageRepo = new MessageRepository();
-  const roomRepo = new RoomRepository();
+  const messageRepo = MessageRepository.getInstance();
+  const roomRepo = RoomRepository.getInstance();
+  const setMemberMyIds = MMKVStore.getSetMemberIdsFromMMKV(); 
   const { namespace, accessToken, userId } = taskData;
   let socket : any = null;
   let previousState: any = null;
@@ -27,7 +31,6 @@ const backgroundSocketTask = async (taskData) => {
 
     // Thiết lập các listener
     socket.on('load_more_msgs_when_connect', async (data) => {
-      console.log('Load more messages when connected');
       try {
         await syncPendingMessages(data, roomRepo, messageRepo);
       } catch (error) {
@@ -35,14 +38,37 @@ const backgroundSocketTask = async (taskData) => {
       }
     });
 
-    socket.on('new_message', async (newMessage) => {
-      try {
-        await syncNewMessage(newMessage, roomRepo, messageRepo);
-        socket.emit('ack_message', newMessage.id);
+    socket.on('new_message', async (data: messageEntity) => {
+      try {        
+        if (data.senderId) {
+          console.log('senderId', data.senderId);   
+          console.log('setMemberMyIds', setMemberMyIds);
+          if ( setMemberMyIds.has(data.senderId)) return
+        }
+        console.log('đi tiếp');
+        
+        await syncNewMessage(data, roomRepo, messageRepo, );
       } catch (error) {
         console.error('Error syncing new message:', error);
       }
     });
+
+    socket.on('notify.update-relation_req', async (data : HandleAcceptReqDataSocket) => {
+      try {
+        const myId = storage.getString(keyMMKVStore.USER_ID) as string
+        await syncWhenAcceptRequest({
+          meId: myId,
+          handlerId: data.user.id,
+          requesterId: myId ,
+          memberId: data.memberId,
+          memberMeId: data.memberMeId,
+          room: data.room,
+          userBase: data.user
+        });
+      } catch (error) {
+        console.error('Error syncing pending messages:', error);
+      }
+    })
   };
 
   // Kiểm tra trạng thái mạng ban đầu

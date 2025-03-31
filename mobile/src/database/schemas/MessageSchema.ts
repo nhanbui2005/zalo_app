@@ -9,7 +9,7 @@ export const messageConfig: {
   columns: [
     {name: '_id', type: 'string'},
     { name: 'content', type: 'string' },
-    { name: 'sender_id', type: 'string' },
+    { name: 'sender_id', type: 'string', isOptional:true },
     { name: 'room_id', type: 'string' },
     { name: 'type', type: 'string' },
     { name: 'status', type: 'boolean' },

@@ -8,12 +8,16 @@ import LastMessage from './LastMessage';
 import {RoomTypeEnum} from '~/features/room/dto/room.enum';
 import {textStyle} from '~/styles/Ui/text';
 import {getTimeDifferenceFromNow} from '~/utils/Convert/timeConvert';
-import { useSocket } from '~/socket/SocketProvider';
 import { useNavigation } from '@react-navigation/native';
 import { MainNavProp, StackNames } from '~/routers/types';
 import { RoomItemView } from '~/database/types/room.type';
 import Avatar from '~/components/Common/Avatar';
 import { useRoomStore } from '~/stores/zustand/room.store';
+import { emitEvent } from '~/socket/socket';
+import { keyMMKVStore, MMKVStore, storage } from '~/utils/storage'; 
+import MemberRepository from '~/database/repositories/MemberRepository';
+import { useSelector } from 'react-redux';
+import { appSelector } from '~/features/app/appSlice';
 
 type Props = {
   room: RoomItemView;
@@ -22,8 +26,8 @@ type Props = {
 
 const ItemChatHome: React.FC<Props> = ({room, onLongPress}) => {  
   const mainNav = useNavigation<MainNavProp>();
-  const {emit} = useSocket();
-  const { resetCurrentRoomId} = useRoomStore()
+  const { meData} = useSelector(appSelector)
+  const memberRepo =MemberRepository.getInstance()
 
   //   const descriptionType: Record<DiscriptionType, DescriptionDetail> = {
   //     text: {label: '', icon: null},
@@ -104,9 +108,14 @@ const ItemChatHome: React.FC<Props> = ({room, onLongPress}) => {
     }
   };
   
-  const handleOnPress = ()=>{
-    resetCurrentRoomId(room.id)
-    emit('join-room', {roomId: room.id});    
+  const handleOnPress = async()=>{
+    const memberMeId = await memberRepo.getMemberMeId(room.id, meData?.id || "")
+
+    MMKVStore.setCurrentRoomId(room.id)
+    MMKVStore.setCurrentMemberMeId(memberMeId || "")
+
+    emitEvent('messages','join-room', {roomId: room.id});    
+    
     mainNav.navigate(StackNames.ChatScreen);
   }
   return (

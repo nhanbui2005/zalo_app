@@ -4,6 +4,7 @@ import notifee from '@notifee/react-native';
 import store from '~/stores/redux/store';
 import App from './App';
 import { name as appName } from './app.json';
+import { registerNotificationHandlers } from '~/services/notificationService'; 
 
 // Hàm yêu cầu quyền thông báo
 async function requestNotificationPermission() {
@@ -17,7 +18,8 @@ async function requestNotificationPermission() {
 
 // Gọi ngay khi app khởi động
 if (Platform.OS === 'android' || Platform.OS === 'ios') {
-  requestNotificationPermission();
+  // requestNotificationPermission();
+  registerNotificationHandlers()
 }
 
 const RootApp = () => (

@@ -2,7 +2,7 @@ import { io } from "socket.io-client";
 
 const sockets = {};
 
-export const connectSocket = (namespace) => {
+export const connectSocket = (namespace) => {  
   if (!sockets[namespace]) {    
     sockets[namespace] = io(`http://192.168.1.6:7777/${namespace}`, {
       transports: ["websocket"],

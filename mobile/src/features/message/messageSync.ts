@@ -6,30 +6,29 @@ import { nanoid } from 'nanoid/non-secure';
 import notifee, { AndroidImportance, AndroidStyle} from '@notifee/react-native';
 import MessageModel from '~/database/models/MessageModel';
 import { EmojiRepository } from '~/database/repositories/EmojiRepository';
-
+import { keyMMKVStore, MMKVStore, storage } from '~/utils/storage';
+import { sendLocalNotification, setupNotificationChannel } from '~/services/notificationService';
 
 export async function syncPendingMessages(
   pendingMessages: { roomId: string; messages: _MessageSentRes[] },
   roomRepository: RoomRepository,
   messageRepository: MessageRepository,
-  allowNotification: boolean = true,
-  currentRoomId?: string
 ): Promise<void> {
-  console.log('lạp lại');
   
-
+  if (pendingMessages.messages.length === 0) return
   const { roomId, messages } = pendingMessages
+  const currentRoomId = storage.getString(keyMMKVStore.CURRENT_ROOM_ID);
   
   const room = await roomRepository.getRoomById(roomId);
 
   const message = messages[messages.length - 1];
-
+  const unReadMessages = currentRoomId ? 0 : pendingMessages.messages.length
   try {    
     const messagesPrepare = await messageRepository.prepareMessages([pendingMessages]);
     let lastMessage: MessageModel | null = null;
 
     if (messagesPrepare.length > 0) {
-      lastMessage = messagesPrepare[0]; 
+      lastMessage = messagesPrepare[0];
     }
     
     await database.write(async () => {
@@ -37,13 +36,13 @@ export async function syncPendingMessages(
       await roomRepository.updateRoomLastMessage(
         messagesPrepare[0].roomId,
         lastMessage,
-        pendingMessages.messages.length,
+        unReadMessages,
         false
       );
     });
-    if (currentRoomId === roomId || !allowNotification) return
+    if (currentRoomId === roomId ) return
 
-    const channelId = await notifee.createChannel({
+    await notifee.createChannel({
       id: 'default',
       name: 'Default Channel',
       importance: AndroidImportance.HIGH,
@@ -64,7 +63,6 @@ export async function syncPendingMessages(
           },
           messages: [
             {
-              
               text: message.content || '.......',
               timestamp: Date.now(), // Thời gian hiện tại để hiển thị tin nhắn mới nhất
             },
@@ -98,7 +96,6 @@ export async function syncPendingMessages(
         },
       },
     });
-    console.log('7');
 
   } catch (error) {
     console.error('Failed to sync pending messages:', error);
@@ -111,11 +108,15 @@ export async function syncNewMessage(
   roomRepository: RoomRepository,
   messageRepository: MessageRepository,
 ): Promise<void> {
+
   if (!newMessage) return;
-  console.log(newMessage);
-  
   const roomId = newMessage.roomId || `temp-${nanoid}`;
   const messageId = newMessage.id || `temp-${nanoid}`;
+  const room = await roomRepository.getRoomById(roomId);
+  const currentRoomId = storage.getString(keyMMKVStore.CURRENT_ROOM_ID);
+  const allowNotification = MMKVStore.getAllowNotification();
+
+  const unReadMessages = currentRoomId ? 0 : 1
 
   try {
     const messagesPrepare = await messageRepository.prepareMessages([
@@ -124,16 +125,20 @@ export async function syncNewMessage(
         messages: [{ ...newMessage, id: messageId }],
       },
     ]);
-
+  
     if (messagesPrepare.length === 0) {
       console.warn('Không có tin nhắn để đồng bộ.');
       return;
     }
-
     await database.write(async () => {
       await messageRepository.batchMessages(messagesPrepare, false);
-      await roomRepository.updateRoomLastMessage(roomId, messagesPrepare[0], 1, false);
+      await roomRepository.updateRoomLastMessage(roomId, messagesPrepare[0], unReadMessages, false);
     });
+
+    if (currentRoomId === roomId || !allowNotification) return
+
+    await setupNotificationChannel();
+    await sendLocalNotification(roomId, room.roomName, room.roomAvatar, newMessage.content || '.......');
 
   } catch (error) {
     console.error(`Failed to sync new message ${messageId}:`, error);

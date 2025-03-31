@@ -5,7 +5,7 @@ import { RedisService } from '@/redis/redis.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { MessageEntity } from '@/api/message/entities/message.entity';
-import { MemberEntity } from '@/api/message/entities/member.entity';
+import { MemberEntity } from '@/api/members/entities/member.entity';
 import { Uuid } from '@/common/types/common.type';
 import { CacheKey } from '@/constants/cache.constant';
 import { createCacheKey } from '@/utils/cache.util';
@@ -19,6 +19,7 @@ import { EventEmitterKey } from '@/constants/event-emitter.constant';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ChatRoomService } from '@/api/chat-room/chat-room.service';
 import Redis from 'ioredis';
+import { NewMessageEvent } from '../dto/message.gateway.dto';
 
 
 const CHAT_ROOM = 'CHAT_ROOM_';
@@ -27,8 +28,8 @@ const SOCKET_ROOM = 'socket_room:';
 @WebSocketGateway(
   { 
     namespace: '/notifications',
-    pingInterval: 2000, 
-    pingTimeout: 1000, 
+    pingInterval: 1000, 
+    pingTimeout: 2000, 
   }
 )
 export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -54,38 +55,36 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   }
 
   async handleConnection(@ConnectedSocket() client: Socket) {
-
    try {    
+
     this.wsAuthService.onClientConnect(client);
     await this.wsAuthService.finishInitialization(client);
     
     const { pendingMessages, id: userId } = client.data.user;    
     
-    await this.userRepository.update(
-      { id: userId },
-      { isOnline: true },
-    );
+     // Cập nhật trạng thái online
+     await this.userRepository.update({ id: userId }, { isOnline: true });
+     this.notifyFriendStatus({ userId, isOnline: true, lastOnline: new Date() });
 
-    this.notifyFriendStatus({ userId, isOnline: true, lastOnline: new Date() });
+     // Join tất cả room
+     const roomIds = await this.chatRoomService.getAllRoomIdsByUserId(userId);
+     roomIds.forEach(id => client.join(SOCKET_ROOM + id));
 
-    const roomIds = await this.chatRoomService.getAllRoomIdsByUserId(userId)
-    const friendIds = this.relationService.getAllRelationIds(userId, RelationStatus.FRIEND)
-
-    //join all room khi online
-    roomIds.forEach(id => {      
-      client.join(SOCKET_ROOM + id)
-    });
     //xóa khi connect lại
     const key = `poit-user-disconnect:${userId}`;
     await this.redisService.del(key);
 
+    // Gửi lại tin nhắn chờ
     if (pendingMessages && pendingMessages.length > 0) {
       await this.loadPendingMessages(userId, client);
     }
-    console.log(`MSG-SOCKET-CONNECT:: ${client.id}`);
+
+    //Gửi lại đồng ý kb
+    this.handlePendingAcceptReq(client, userId)
+   
+    console.log(`MSG-SOCKET-CONNECT:: ${userId}`);
 
    } catch (error) {
-    console.log(error);
     
    }
   }
@@ -99,7 +98,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         this.redisService.del(createCacheKey(CacheKey.USER_CLIENT, userId)),
       ]);
 
-      await this.redisService.set(`poit-user-disconnect:${userId}`, `${Number(new Date())}`, 6);
+      await this.redisService.set(`poit-user-disconnect:${userId}`,`${Number(new Date())}`, 5);
 
       console.log('disconnect');
       
@@ -110,9 +109,8 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
 
   @OnEvent(EventEmitterKey.NEW_MESSAGE)
-  async newMessage(data: any) {
+  async newMessage(data: NewMessageEvent) {
     try {
-      
       const { onlineUsersRoom, offlineUsersRoom, msgData, roomId, createdAt } = data;
 
       const msgId = msgData.id;
@@ -122,20 +120,22 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       this.server.to(SOCKET_ROOM + roomId).emit(SocketEmitKey.NEW_MESSAGE, msgData);
 
       if (onlineUsersRoom.length > 0) {
+        
         await this.memberRepository.update(
           { id: In(onlineUsersRoom.map((m) => m)) },
           { msgRTime: new Date(createdAt) },
         );
         
         const msgAcks = new Map<Uuid, string>();
-        onlineUsersRoom.forEach((userId) => msgAcks.set(userId  , msgDataStr));
+        onlineUsersRoom.forEach((userId: Uuid) => msgAcks.set(userId  , msgDataStr));
         this.pendingAcks.set(msgId, msgAcks);
       }
 
       // Xử lý user offline (lưu tin nhắn) 
       if (offlineUsersRoom.length > 0) {
-
-        const mKeys = offlineUsersRoom.map((userId) => createCacheKey(CacheKey.UNRECEIVE_MSG, userId));
+        console.log(offlineUsersRoom);
+        
+        const mKeys = offlineUsersRoom.map((userId: Uuid) => createCacheKey(CacheKey.UNRECEIVE_MSG, userId));
         const mOldOffData = await this.redisService.mget(...mKeys);
 
         const mNewOffData: Array<[string, string]> = mOldOffData.map((oldData, index) => {
@@ -155,6 +155,32 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       console.error('Error in newMessage:', error);
     }
   }
+
+  @OnEvent(EventEmitterKey.UPDATE_RELATION_REQ)
+  async acceptRelationReq(data: any) {
+    const {status, memberId, memberMeId,room, user} = data 
+    const acceptRelationData = {
+      memberId: memberMeId,
+      memberMeId: memberId,
+      status,
+      room,
+      user
+    }
+
+    const clientId = await this.redisService.get(createCacheKey(CacheKey.USER_CLIENT, user.id));
+    //có clinetId chứng tỏ online
+    if (clientId) {
+      // Nếu user online, gửi sự kiện socket
+      this.server.to(clientId).emit(SocketEmitKey.ACCEPT_RELATION_REQ, acceptRelationData);
+    } else {
+      //of thì catch lại
+      this.redisService.lpush(
+        createCacheKey(CacheKey.UNRECEIVE_HANDLE_REQUEST_RELATION),
+        JSON.stringify(acceptRelationData)
+      )
+    }
+  }
+  
 
   @SubscribeMessage('ack_message')
   async handleAckMessage(@MessageBody() msgId: string, @ConnectedSocket() client: Socket) {
@@ -186,7 +212,6 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         const messages = await this.messageRepository.find({
           where: { id: In(messageIds) },
         });
-        console.log(messages);
         
         client.emit(SocketEmitKey.LOAD_MORE_MSGS_WHEN_CONNECT, {
           roomId,
@@ -251,7 +276,6 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       createCacheKey(CacheKey.MSG_SOCKET_CONNECT, client.id)
     )) ;    
     if (!userId) {
-      console.log(`No user found for client ${client.id}`);
       return null;
     }
     return userId as Uuid;
@@ -265,22 +289,15 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         { id: userId },
         { lastOnline: now, isOnline: false }
       );
-      console.log(`User ${userId} set offline in database`);
-
       this.notifyFriendStatus({ userId, isOnline: false, lastOnline: now });
 
-     
-      console.log(`Redis keys cleared for client=${clientId}, userId=${userId}`);
-    } catch (dbError) {
+      } catch (dbError) {
       console.error(`Failed to update database for user ${userId}:`, dbError);
     }
   }
 
   private async listenToRedisEvents() {
-    console.log('🚀 Initializing Redis Subscriber...');
-
     const sub = new Redis();
-    console.log(sub);
     
     sub.psubscribe('__keyevent@0__:expired', (err, count) => {
       if (err) {
@@ -290,6 +307,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       }
     });
     sub.on('pmessage', async (pattern, channel, key) => {  
+          console.log('aaaaaaaa');
           
       if (key.startsWith('poit-user-disconnect:')) {
 
@@ -306,5 +324,17 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     await this.setUserOffline(userId as Uuid);
 
     console.log(`MSG-SOCKET-DISCONNECT::${userId}`);
+  }
+  private async handlePendingAcceptReq(client: Socket, userId: Uuid){
+    const pendingRequests = await this.redisService.lrange(
+      createCacheKey(CacheKey.UNRECEIVE_HANDLE_REQUEST_RELATION, userId),
+      0, -1
+    );
+    
+    for (const req of pendingRequests) {
+      client.emit(SocketEmitKey.ACCEPT_RELATION_REQ, JSON.parse(req));
+    }
+    // Sau khi gửi, xoá các yêu cầu đã xử lý
+    await this.redisService.del(createCacheKey(CacheKey.UNRECEIVE_HANDLE_REQUEST_RELATION, userId));
   }
 }

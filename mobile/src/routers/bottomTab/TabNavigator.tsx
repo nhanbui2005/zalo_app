@@ -10,7 +10,6 @@ import { Assets } from '../../styles/Ui/assets';
 import { textStyle } from '../../styles/Ui/text';
 import { iconSize } from '../../styles/Ui/icons';
 import { _MessageSentRes } from '~/features/message/dto/message.dto.parent';
-import { useStateStore } from '~/stores/zustand/state.store';
 
 type RouteName = 'HomeTab' | 'ContactsTab' | 'DinaryTab' | 'PersonalTab';
 

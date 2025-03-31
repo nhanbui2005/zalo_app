@@ -9,12 +9,12 @@ export const SocketProvider = ({ namespace, children }) => {
   
   useEffect(() => {    
     connectSocket(namespace);
-
+    
     return () => {
-      console.log('disconnect');
       disconnectSocket(namespace);
     };
   }, [namespace]);
+  
 
   const socketActions = {
     emit: (event, data) => {

@@ -13,6 +13,7 @@ export enum CacheKey {
 
   //relation
   UNRECEIVE_HANDLE_REQUEST_RELATION = 'unreceive-handle-request-relation:%s',
+  
 
   //notification
   FCM_TOKEN = 'fcm-token:%s',

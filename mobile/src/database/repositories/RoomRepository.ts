@@ -9,11 +9,28 @@ import { Observable, of } from 'rxjs';
 import { nanoid } from 'nanoid';
 
 export default class RoomRepository {
+  private static instance: RoomRepository; 
   private roomsCollection = database.get<RoomModel>('rooms');
+
+  private constructor() {} // Chặn việc tạo instance từ bên ngoài
+
+  static getInstance(): RoomRepository {
+    if (!RoomRepository.instance) {
+      RoomRepository.instance = new RoomRepository();
+    }
+    return RoomRepository.instance;
+  }
+
   async getRoomById(roomId: string): Promise<Room> {    
-    const roomDB = await this.roomsCollection.query(Q.where('_id', roomId)).fetch();
-    const roomModel = roomDB[0];
-    
+    let roomModel
+    try {
+      const roomDB = await this.roomsCollection.query(Q.where('_id', roomId)).fetch();
+      roomModel = roomDB[0];
+      
+    } catch (error) {
+      console.log('lỗi đây', error);
+      
+    }
     return {
       id: roomId,
       type: roomModel.type,
@@ -23,6 +40,7 @@ export default class RoomRepository {
       unReadMsgCount: roomModel.unreadCount,
       memberCount: roomModel.memberCount
     };
+  
   }
   getRoomsWithLastMessageObservable(): Observable<RoomItemView[]> {
     return this.roomsCollection
@@ -71,10 +89,7 @@ export default class RoomRepository {
   
     const updateFn = async () => {
       const rooms = await this.roomsCollection.query(Q.where('_id', roomId)).fetch();
-      if (rooms.length === 0) {
-        return;
-      }
-      
+     
       await rooms[0].update(r => {
         r.lastMessageContent = lastMessage.content || '';
         r.lastMessageType = lastMessage.type || 'text';
@@ -83,8 +98,7 @@ export default class RoomRepository {
         r.lastMessageSenderName = lastMessage.sender?.user?.username || 'unknown';
         r.unreadCount += messageCounts;
         r.lastMessageCreatedAt = Number(lastMessage.createdAt) || Number(new Date());
-      });
-
+      });      
       console.log(`Cập nhật tin nhắn cuối của phòng ${roomId} thành công.`);
     };
   

@@ -7,19 +7,18 @@ import {_GetAllRoomRes} from '~/features/room/dto/room.dto.parent';
 import {_MessageSentRes} from '~/features/message/dto/message.dto.parent';
 import UModal, { UModalRef } from '~/components/Common/modal/UModal';
 import RoomListView from './components/roomList';
-import { useStateStore } from '~/stores/zustand/state.store';
+import { MMKVStore } from '~/utils/storage';
 
 const HomeScreen = () => {
   const mainNav = useNavigation<MainNavProp>();
   const modalRef = useRef<UModalRef>(null);
   const isFocused = useIsFocused();
-  const {setAllowNotification,allowNotification} = useStateStore()
 
-  useEffect(() => {    
+  useEffect(() => {          
     if (isFocused) {
-      setAllowNotification(false);
+      MMKVStore.setAllowNotification(false); 
     }
-    return () => setAllowNotification(true);
+    return () => MMKVStore.setAllowNotification(true);
   }, [isFocused]);
   
   const goToSearchScreen = () => {

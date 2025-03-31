@@ -6,9 +6,9 @@ import {
 } from '../common/pagination/paginationDto';
 import {syncNewMessage} from './messageSync';
 import {MessageApi} from './messageApi';
-import {v4 as uuidv4} from 'uuid';
 import MessageRepository from '~/database/repositories/MessageRepository';
 import RoomRepository from '~/database/repositories/RoomRepository';
+import { nanoid } from 'nanoid/non-secure';
 
 const loadMoreMessage = async (
   dto: CursorPaginatedReq<string>,
@@ -29,23 +29,27 @@ const loadMoreMessage = async (
   }
 };
 
-const SentMessage = async (
+const SentMessageText = async (
   dto: _MessageSentReq,
+  memberMyId: string,
   roomRepository: RoomRepository,
   messageRepository: MessageRepository,
 ): Promise<void> => {
-  try {
+  try {    
     // 1. Tạo tin nhắn giả và lưu cục bộ
-    const tempId = `temp-${uuidv4()}`;
+    const tempId = `temp-${nanoid()}`;
     const message: Partial<_MessageSentRes> = {
       id: tempId,
       content: dto.content,
       roomId: dto.roomId,
       type: dto.contentType,
+      senderId: memberMyId.trim(),
       isSelfSent: true,
       replyMessageId: dto.replyMessageId,
+      createdAt: new Date(),
       updatedAt: new Date(),
     };
+    
     // 2. Lưu cục bộ trước (cả online/offline)
     await syncNewMessage(
       message,
@@ -55,9 +59,7 @@ const SentMessage = async (
 
     if (true) {
       // 3. Gửi tin nhắn lên server
-      const messageRes = await MessageApi.SentMessage(dto);
-
-      
+      const messageRes = await MessageApi.SentMessage(dto);      
 
       // 4. Cập nhật tin nhắn với dữ liệu từ server
       await messageRepository.updateSentMessage(
@@ -68,9 +70,7 @@ const SentMessage = async (
       );
 
      
-    } else {
-      //actions when offline
-    }
+    } 
   } catch (error: any) {
     throw error;
   }
@@ -78,5 +78,5 @@ const SentMessage = async (
 
 export const MessageService = {
   loadMoreMessage,
-  SentMessage,
+  SentMessageText,
 };

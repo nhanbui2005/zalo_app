@@ -3,7 +3,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
-import { MemberEntity } from './entities/member.entity';
+import { MemberEntity } from '../members/entities/member.entity';
 import { ChatRoomEntity } from '../chat-room/entities/chat-room.entity';
 import { MessageEntity } from './entities/message.entity';
 import {
@@ -34,6 +34,7 @@ import { RelationService } from '../relationship/relation.service';
 import { RelationStatus } from '@/constants/entity-enum/relation.enum';
 import { ChatRoomService } from '../chat-room/chat-room.service';
 import { DetailMessageReqDto } from './dto/get-detail-message-req.dto';
+import { NewMessageEvent } from 'src/events/dto/message.gateway.dto';
 
 @Injectable()
 export class MessageService {
@@ -152,6 +153,7 @@ export class MessageService {
   }
 
   async sendTextMsg(roomId: Uuid, data: SendTextMsgReqDto, meId: Uuid) {
+    // check if the room exists
     //Kiểm tra phòng có tồn tại ko    
     const room = await this.chatRoomRepository.findOneOrFail({
       where: { id: roomId },
@@ -159,6 +161,7 @@ export class MessageService {
       relations: ['members'],
     });
 
+    // check if the user is a member of the room
     const member = await this.memberRepository.findOneOrFail({
       where: {
         roomId: roomId,
@@ -184,21 +187,17 @@ export class MessageService {
       relations: ['replyMessage', 'sender'],
     });
     const { onlineUsersRoom, offlineUsersRoom } =
-      await this.chatRoomService.getUserIdsStatusRoom(room.id);
-    
+      await this.chatRoomService.getUserIdsStatusRoom(room.id);      
+
     this.eventEmitter.emit(EventEmitterKey.NEW_MESSAGE, {
-      id: newMsg.id,
-      content: data.content,
-      type: MessageContentType.TEXT,
-      isSelfSent: member.id == meId,
-      roomId,
+      roomId: roomId,
       onlineUsersRoom: onlineUsersRoom,
       offlineUsersRoom: offlineUsersRoom,
       msgData: newMsg,
       createdAt: new Date(),
-    });
-
-    return plainToInstance(MessageResDto, newMsg);
+    } as NewMessageEvent);
+    
+    return newMsg
   }
 
   async loadMoreMessage(

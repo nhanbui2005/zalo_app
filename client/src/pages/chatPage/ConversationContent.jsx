@@ -6,7 +6,7 @@ import SquareIcon from '../../components/icon/squareIcon'
 import useSocketEvent from '../../hooks/useSocket'
 import Utils from '../../utils/utils'
 import {
-  addNewMgs,
+  addNewMsg,
   getRoomById,
   getRoomByPartnerId,
   loadMessagesFrom,
@@ -35,7 +35,7 @@ const ConversationContent = () => {
   useEffect(() => {
     //rời phòng chat và dọn dẹp dữ liệu cũ
     dispatch(resetRoom())
-    emitEvent('message','leave-room', { roomId: roomId })
+    emitEvent('messages','leave-room', { roomId: roomId })
     if (type != 'room') {
       dispatch(getRoomByPartnerId({ partnerId: id }))
     } else {
@@ -45,7 +45,7 @@ const ConversationContent = () => {
 
   useEffect(() => {
     if (roomId) {
-      emitEvent('message','join-room', { roomId: roomId })
+      emitEvent('messages','join-room', { roomId: roomId })
       setIsLoading(false)      
     }
   }, [roomId])
@@ -60,7 +60,7 @@ const ConversationContent = () => {
             <Header />
             <div className="h-0.5 w-full bg-slate-400" />
             <Content roomId={roomId} />
-            <Input roomId={roomId} />
+            <Input memberId={id} roomId={roomId} />
           </div>
           <div className="h-full w-0.5 bg-slate-400" />
           {/* {room && <ConversationInfo room={room} />} */}
@@ -108,16 +108,9 @@ const Content = ({ roomId }) => {
   members.forEach((mem) => {
     membersObj[mem.id] = mem
   })
+  
 
-  console.log('membersObj', membersObj)
-
-  // useSocketEvent('writing_message', (data) => {
-  //   setpartnerWriting(data)
-  // })
-
-  useSocketEvent('received_msg', (data) => {
-    console.log('received_msg', data);
-    
+  useSocketEvent('received_msg', (data) => {    
     if (roomId == data.roomId) {
       dispatch(setReceiver({ memberId: data.memberId, receivedAt: data.receivedAt }))
     }
@@ -237,8 +230,10 @@ const Content = ({ roomId }) => {
 }
 
 const WritingCompoent = ({ memberId }) => {
+  const user = useSelector((state) => state.user); 
   const members = useSelector((state) => state.currentRoom.members)
   const [partnerWriting, setPartnerWriting] = useState({})
+
   useSocketEvent('writing_message', (data) => {
     setPartnerWriting(data)
   })
@@ -258,6 +253,7 @@ const Input = ({ roomId }) => {
   const dispatch = useDispatch()
   const msgReply = useSelector((state) => state.currentRoom.msgReply)
   const membersObj = useSelector((state) => state.currentRoom.membersObj)
+  const memberId = useSelector((state) => state.currentRoom.memberId)
 
   const [textContent, setTextContent] = useState('')
   const [isMeWriting, setIsMeWriting] = useState(false)
@@ -271,6 +267,7 @@ const Input = ({ roomId }) => {
   }
 
   const sendTextMessage = async () => {
+    
     dispatch(
       sendTextMsg({
         roomId,
@@ -284,16 +281,22 @@ const Input = ({ roomId }) => {
     cancelReply(null)
   }
 
-  useEffect(() => {
+  useEffect(() => {    
     if (textContent && !isMeWriting) {
-      emitEvent('message','writing-message', {
+      console.log('memberId', memberId);
+      
+      emitEvent('messages','writing-message', {
         roomId,
+        memberId,
+        userName: membersObj[memberId].user.username,
         status: true,
       })
       setIsMeWriting(true)
     } else if (!textContent && isMeWriting) {
-      emitEvent('message','writing-message', {
+      emitEvent('messages','writing-message', {
         roomId,
+        memberId,
+        userName: membersObj[memberId].user.username,
         status: false,
       })
       setIsMeWriting(false)
@@ -394,7 +397,6 @@ const MessageItem = memo(
     const [isHovered, setIsHovered] = useState(false) // Trạng thái hover
     const ref = useRef(null)
 
-    console.log('load l ại')
 
     const setMessageReply = () => {
       dispatch(

@@ -7,49 +7,86 @@ import {
   StyleSheet,
   Animated,
   Keyboard,
-  Text,
 } from 'react-native';
 import {Assets} from '~/styles/Ui/assets';
 import {colors} from '~/styles/Ui/colors';
 import {iconSize} from '~/styles/Ui/icons';
 import EmojiList from './EmojiList';
-import {useSelector} from 'react-redux';
-import {appSelector} from '~/features/app/appSlice';
 import {useSocket} from '~/socket/SocketProvider';
 import {useChatStore} from '~/stores/zustand/chat.store';
-import { _MessageSentReq } from '~/features/message/dto/message.dto.parent';
+import {_MessageSentReq} from '~/features/message/dto/message.dto.parent';
 import MessageRepository from '~/database/repositories/MessageRepository';
 import RoomRepository from '~/database/repositories/RoomRepository';
-import { database } from '~/database';
-import { MessageService } from '~/features/message/messageService';
+import {MessageService} from '~/features/message/messageService';
+import {useAppSelector} from '~/stores/redux/store';
+import {appSelector} from '~/features/app/appSlice';
+import {MessageContentType} from '~/features/message/dto/message.enum';
+import MemberRepository from '~/database/repositories/MemberRepository';
+import { MMKVStore } from '~/utils/storage';
 
 interface BottomSheetProps {
-  roomId: string,
+  roomId: string;
   onTextChange: (text: string) => void;
   onEmojiChange: (text: string) => void;
 }
 
 const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
   ({roomId, onTextChange, onEmojiChange}) => {
-    const messageRepo = new MessageRepository()
-    const roomRepo = new RoomRepository();
     const inputRef = useRef<TextInput>(null);
+    const currentMemberMyId = MMKVStore.getCurrentMemberMeId();
+    const currentRoomId = MMKVStore.getCurrentRoomId();
     const {emit} = useSocket();
-    const { curentMessageRepling,memberWriting } = useChatStore();
+    const {meData} = useAppSelector(appSelector);
+    const {curentMessageRepling} = useChatStore();
     const [text, setText] = useState('');
     const [keyboard, setKeyboard] = useState(false);
     const [renderEmojis, setRenderEmojis] = useState(false);
     const [isWriting, setIsWriting] = useState(false);
+
     const scaleIcons = useRef(new Animated.Value(1)).current;
     const scaleSend = useRef(new Animated.Value(0)).current;
+    const roomRepo = RoomRepository.getInstance()
+    const messageRepo = MessageRepository.getInstance()
+    useEffect(() => {
+      if (!currentMemberMyId && meData) {
+        const getMemberId = async () => {
+          try {
+            const memberRepo = MemberRepository.getInstance();
+            const id = await memberRepo.getMemberMeId(currentRoomId, meData?.id);
+            console.log('lấy tu');
+            
+            if (id) {
+              MMKVStore.setCurrentMemberMeId(id);
+            }
+          } catch (error) {
+            console.error("Lỗi khi lấy memberId:", error);
+          }
+        };
+    
+        getMemberId(); 
+      }
+    }, []); 
+    
+  
 
     //listen to emit writing
-    useEffect(() => {      
+    useEffect(() => {
       if (text && !isWriting) {
-        emit('writing-message', {roomId: roomId, status: true});
+        emit('writing-message', {
+          roomId: roomId,
+          memberId: currentMemberMyId,
+          userName: meData?.username,
+          status: true,
+        });
+
         setIsWriting(true);
       } else if (text == '' && isWriting) {
-        emit('writing-message', {roomId: roomId, status: false});
+        emit('writing-message', {
+          roomId: roomId,
+          memberId: currentMemberMyId,
+          userName: meData?.username,
+          status: false,
+        });
         setIsWriting(false);
       }
     }, [text]);
@@ -105,19 +142,22 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
       onTextChange(newText);
       handleAnimation(newText);
     }, []);
-    const handleSendMessage = async () => {
-      console.log(roomId);
-      
-      if (!roomId) return
-      const dto = {
-        roomId: roomId,
-        content: text,
-        contentType: curentMessageRepling?.id
-      } as _MessageSentReq
-      console.log(dto);
-      
-      await MessageService.SentMessage(dto, roomRepo, messageRepo)
-      setText('');
+    const handleSendMessage =async () => {      
+      if (roomId && meData) {
+
+        const dto = {
+          roomId: roomId,
+          content: text,
+          contentType: MessageContentType.TEXT,
+          replyMessageId: curentMessageRepling?.id,
+        } as _MessageSentReq;
+console.log(dto);
+
+        setText('');
+
+        await MessageService.SentMessageText(dto, currentMemberMyId , roomRepo, messageRepo);
+         
+      }
     };
 
     return (
@@ -139,18 +179,7 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
               />
             </Animated.View>
 
-            <Animated.View
-              style={[
-                styles.btnSend,
-                {transform: [{scale: scaleSend}], opacity: scaleSend},
-              ]}>
-              <TouchableOpacity
-                style={styles.iconButton}
-                onPress={handleSendMessage}>
-                <Image source={Assets.icons.send_blue} style={iconSize.large} />
-              </TouchableOpacity>
-            </Animated.View>
-
+           
             <Animated.View
               style={[
                 styles.btns,
@@ -172,6 +201,18 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
                 />
               </TouchableOpacity>
             </Animated.View>
+            <Animated.View
+              style={[
+                styles.btnSend,
+                {transform: [{scale: scaleSend}], opacity: scaleSend},
+              ]}>
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={handleSendMessage}>
+                <Image source={Assets.icons.send_blue} style={iconSize.large} />
+              </TouchableOpacity>
+            </Animated.View>
+
           </View>
         </View>
 
@@ -197,6 +238,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 5,
+
   },
   input: {
     flex: 1,

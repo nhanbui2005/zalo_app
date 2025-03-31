@@ -1,8 +1,9 @@
-import { Model } from '@nozbe/watermelondb';
-import { field, immutableRelation, text } from '@nozbe/watermelondb/decorators';
+import { Model, Query } from '@nozbe/watermelondb';
+import { children, field, immutableRelation, text } from '@nozbe/watermelondb/decorators';
 import { MessageContentType, MessageViewStatus } from '~/features/message/dto/message.enum';
 import RoomModel from './RoomModel';
 import MemberModel from './MemberModel';
+import EmojiModel from './EmojiModel';
 
 export default class MessageModel extends Model {
   static table = 'messages';
@@ -15,7 +16,7 @@ export default class MessageModel extends Model {
   @field('created_at') createdAt!: number;
   @field('updated_at') updatedAt!: number;
   
-  @text('sender_id') senderId!: string;
+  @text('sender_id') senderId?: string;
   @text('room_id') roomId!: string;
   @text('reply_message_id') replyMessageId?: string;
 
@@ -27,4 +28,7 @@ export default class MessageModel extends Model {
 
   // Tin nhắn được reply (dùng query để lấy danh sách replies)
   @immutableRelation('messages', 'reply_message_id') replyMessage?: MessageModel;
+
+  // Quan hệ với EmojiModel (danh sách emoji của tin nhắn)
+  @children('emojis') emojis!: Query<EmojiModel>;
 }

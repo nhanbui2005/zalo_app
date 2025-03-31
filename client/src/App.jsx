@@ -1,8 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux'
 import useSocketEvent from './hooks/useSocket'
 import { AppRoutes } from './Routes/routes'
-import { addNewMgs } from './redux/slices/currentRoomSlice'
-import { loadMoreMsgWhenConnect, updateLastMsgForRoom } from './redux/slices/roomSlice'
+import { loadMoreMsgWhenConnect } from './redux/slices/roomSlice'
 
 export default function App() {
   const dispatch = useDispatch()
@@ -25,5 +24,6 @@ export default function App() {
   
   return (
     <AppRoutes/>
+   
   )
 }

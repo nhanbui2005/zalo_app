@@ -60,11 +60,13 @@ export class MessageController {
     @Body() dto: SendTextMsgReqDto,
     @CurrentUser('id') id: Uuid
   ) {
+
     return this.messageService.sendTextMsg(roomId, dto, id);
   }
   @Get('/detail')
   findDetail(
     @Param('messageId') id: Uuid,
+    // Call the message service to handle sending the text message
     @Body() dto: DetailMessageReqDto
   ) {
     return this.messageService.findDetail(id, dto);

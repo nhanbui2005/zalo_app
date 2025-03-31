@@ -2,17 +2,27 @@ import { Collection, Database, Q } from '@nozbe/watermelondb';
 import { database } from '~/database';
 import UserModel from '../models/UserModel';
 import { RelationStatus } from '~/features/relation/dto/relation.dto.enum';
-import { UserItemView } from '../types/user.typee';
+import { UserItemBaseView, UserItemView } from '../types/user.typee';
 import { _HandleRequestRes, _SendRequestRes } from '~/features/relation/dto/relation.dto.parent';
 import { _UserRes } from '~/features/user/dto/user.dto.parent';
 import { FriendStatusSocket } from '~/socket/SocketProvider';
 import { map, Observable } from 'rxjs';
 import MemberModel from '../models/MemberModel';
+import { UserBase } from '~/features/user/dto/user.dto.nested';
 
 export default class UserRepository {
+  private static instance: UserRepository; // Lưu instance duy nhất
   private usersCollection = database.get<UserModel>('users')
   private membersCollection = database.get<MemberModel>('members')
 
+  private constructor() {} // Chặn việc tạo instance từ bên ngoài
+
+  static getInstance(): UserRepository {
+    if (!UserRepository.instance) {
+      UserRepository.instance = new UserRepository();
+    }
+    return UserRepository.instance;
+  }
 
   getAllUsersObservable(status: RelationStatus): Observable<UserItemView[]> {
     return this.usersCollection
@@ -44,9 +54,7 @@ export default class UserRepository {
         user.email = userData.email || '';
         user.dob = Number(userData.dob) || Date.now();
         user.avatarUrl = userData.avatarUrl || '';
-        user.avatarPid = userData.avatarPid || '';
         user.coverUrl = userData.coverUrl || '';
-        user.coverPid = userData.coverPid || '';
         user.isOnline = false;
         user.lastOnline = Date.now();
         user.relationStatus = RelationStatus.FRIEND;
@@ -116,9 +124,7 @@ export default class UserRepository {
           userRecord.email = userData.email || existingUser.email;
           userRecord.dob = Number(userData.dob) || existingUser.dob;
           userRecord.avatarUrl = userData.avatarUrl || existingUser.avatarUrl;
-          userRecord.avatarPid = userData.avatarPid || existingUser.avatarPid || '';
           userRecord.coverUrl = userData.coverUrl || existingUser.coverUrl || '';
-          userRecord.coverPid = userData.coverPid || existingUser.coverPid || '';
           userRecord.relationStatus = relationStatus; // Sử dụng relationStatus từ item
         });
       } else {
@@ -131,9 +137,7 @@ export default class UserRepository {
           user.email = userData.email || '';
           user.dob = Number(userData.dob) || Date.now();
           user.avatarUrl = userData.avatarUrl || '';
-          user.avatarPid = userData.avatarPid || '';
           user.coverUrl = userData.coverUrl || '';
-          user.coverPid = userData.coverPid || '';
           user.relationStatus = relationStatus; 
           user.preferredName = '';
         });
@@ -152,7 +156,7 @@ export default class UserRepository {
       await writeFn();
     }
   }
-  async getMapUsersByRoomId(roomId: string): Promise<Map<string, UserModel>> {
+  async getMapUsersByRoomId(roomId: string): Promise<Map<string, UserItemBaseView>> {
     try {
       // Bước 1: Lấy danh sách user_id thuộc roomId từ bảng members
       const members = await this.membersCollection
@@ -163,24 +167,30 @@ export default class UserRepository {
       const userIds = members.map(member => member.userId).filter(Boolean);
   
       if (userIds.length === 0) {
-        return new Map<string, UserModel>(); // Trả về Map rỗng nếu không có user
+        return new Map<string, UserItemBaseView>(); 
       }
   
       // Bước 3: Lấy danh sách users từ bảng users với các userIds
-      const users = await this.usersCollection
+      const rawUsers = await this.usersCollection
         .query(Q.where('_id', Q.oneOf(userIds)))
         .fetch();
+
+        const usersMap = new Map<string, UserItemBaseView>();
+
+        rawUsers.forEach((user, index) => {
+          usersMap.set(members[index]._id, {
+            id: user.id,
+            username: user.username,
+            avatarUrl: user.avatarUrl,
+            preferredName: user.preferredName
+          });
+        });
   
-      // Bước 4: Chuyển danh sách users thành Map với key là _id, chỉ giữ các trường cần thiết
-      const usersMap = new Map<string, UserModel>();
-      users.forEach(user => {
-        usersMap.set(user._id, user);
-      });
-  
-      return usersMap;
+      return usersMap
     } catch (error) {
       console.error(`Error fetching users for roomId=${roomId}:`, error);
       throw error;
     }
   }
+  
 }

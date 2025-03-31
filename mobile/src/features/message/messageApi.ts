@@ -23,8 +23,7 @@ const loadMoreMessage= async (dto: CursorPaginatedReq<string>): Promise<CursorPa
 const SentMessage = async (dto: _MessageSentReq)
 : Promise<_MessageSentRes> => {
   try {
-    const res = (await axiosInstance.post(`messages/${dto.roomId}/text`, dto));
-    return res.data
+    return await axiosInstance.post(`messages/${dto.roomId}/text`, dto)
   } catch (error: any) {
     console.error('Error while sending message:', error);
     throw error;

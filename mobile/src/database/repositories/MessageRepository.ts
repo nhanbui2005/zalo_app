@@ -1,22 +1,34 @@
 import {database} from '~/database';
-import {Collection, Database, Q, Query} from '@nozbe/watermelondb';
+import { Q, Query} from '@nozbe/watermelondb';
 import {_MessageSentRes} from '~/features/message/dto/message.dto.parent';
 import {
   MessageContentType,
   MessageViewStatus,
 } from '~/features/message/dto/message.enum';
 import MessageModel from '../models/MessageModel';
-import { v4 as uuidv4 } from 'uuid';
 import RoomRepository from './RoomRepository';
 import { Observable } from 'rxjs';
 import { MessageItemView } from '../types/message.type';
 import { CursorPaginatedRes, PageOptionsDto } from '~/features/common/pagination/paginationDto';
 import { nanoid } from 'nanoid';
 import EmojiModel from '../models/EmojiModel';
+import { UserItemBaseView } from '../types/user.typee';
 
 export default class MessageRepository {
+  private static instance: MessageRepository; 
+
   private messagesCollection = database.get<MessageModel>('messages');  
   private emojisCollection = database.get<EmojiModel>('emojis');
+
+  private constructor() {} // Chặn việc tạo instance từ bên ngoài
+
+  static getInstance(): MessageRepository {
+    if (!MessageRepository.instance) {
+      MessageRepository.instance = new MessageRepository();
+    }
+    return MessageRepository.instance;
+  }
+
   // Kiểm tra bảng messages có trống không
   async isMessagesTableEmpty(): Promise<boolean> {
     const messages = await this.messagesCollection.query().fetchCount();
@@ -42,30 +54,34 @@ export default class MessageRepository {
   }
   // Lấy danh sách tin nhắn theo roomId
   getMessagesByRoomIdObservable(
-    this: MessageRepository,
     roomId: string,
+    userMap: Map<string, UserItemBaseView>,
     afterCursor?: number,
+    beforCursor?: number
   ): Observable<MessageItemView[]> {
     return new Observable(observer => {
       let query = this.messagesCollection
         .query(Q.where('room_id', roomId), Q.sortBy('created_at', Q.desc));
   
-      // Nếu có afterCursor, chỉ lấy tin nhắn mới hơn
+        console.log('afterCursor', afterCursor);
+        console.log('beforCursor', beforCursor);
+
       if (afterCursor) {
         query = query.extend(Q.where('created_at', Q.gt(afterCursor)));
       }
-  
+      
       const observableQuery = query.observe();
   
       const subscription = observableQuery.subscribe(async messages => {
-        // Lấy tất cả messageId từ danh sách tin nhắn
+        
         const messageIds = messages.map(msg => msg.id);
-        // Query tất cả emojis có messageId trong danh sách messageIds
+  
+        // Lấy danh sách emoji liên quan đến các tin nhắn
         const emojis = await this.emojisCollection
-        .query(Q.where('message_id', Q.oneOf(messageIds)))
-        .fetch();
-
-        // Tạo map từ messageId đến danh sách content của emojis
+          .query(Q.where('message_id', Q.oneOf(messageIds)))
+          .fetch();
+  
+        // Tạo map từ messageId -> danh sách emoji
         const emojiMap: { [key: string]: string[] } = {};
         emojis.forEach(emoji => {
           if (!emojiMap[emoji.messageId]) {
@@ -73,50 +89,57 @@ export default class MessageRepository {
           }
           emojiMap[emoji.messageId].push(emoji.content);
         });
-        
-        const mappedMessages = messages.map(msg => ({
-          id: msg.id,
-          content:msg.content,
-          type: msg.type as MessageContentType,
-          senderId: msg.senderId,
-          roomId: msg.roomId,
-          status: msg.status,
-          replyMessageId: msg.replyMessageId,
-          revoked: msg.revoked,
-          createdAt: new Date(msg.createdAt),
-          updatedAt: new Date(msg.updatedAt),
-          emojis: emojiMap[msg.id] || [], 
-        }));
 
+        // Map tin nhắn thành MessageItemView[]
+        const mappedMessages: MessageItemView[] = messages.map(msg => {
+          
+          const mappedMessage = {
+            id: msg.id,
+            content: msg.content,
+            type: msg.type as MessageContentType,
+            senderId: msg.senderId || '',
+            roomId: msg.roomId,
+            status: msg.status,
+            replyMessageId: msg.replyMessageId,
+            revoked: msg.revoked,
+            createdAt: new Date(msg.createdAt),
+            updatedAt: new Date(msg.updatedAt),
+            emojis: emojiMap[msg.id] || [],
+            sender: msg.senderId ? userMap.get(msg.senderId) : { id: '', username: 'Unknown', avatarUrl: '', preferredName: '' },
+          };
+          return mappedMessage;
+        });
+        
         observer.next(mappedMessages);
       });
   
       return () => subscription.unsubscribe();
     });
   }
+  
   // Hàm chuẩn bị tin nhắn để tạo
   async prepareMessages(
     pendingMessages: { roomId: string; messages: Partial<_MessageSentRes>[] }[]
   ): Promise<MessageModel[]> {
     const messagesCollection = database.get<MessageModel>('messages');
     const preparedMessages: MessageModel[] = [];
-  
+    
     try {
       // Lấy danh sách message IDs để kiểm tra tồn tại
       const messageIds = pendingMessages
         .flatMap(({ messages }) => messages.map(msg => msg.id))
         .filter((id): id is string => id !== undefined && id !== null);
   
-      // Query các tin nhắn đã tồn tại (dùng _id thay vì id)
+      // Query các tin nhắn đã tồn tại
       const existingMessages = messageIds.length
         ? await messagesCollection
-            .query(Q.where('_id', Q.oneOf(messageIds))) // Sửa id thành _id
+            .query(Q.where('_id', Q.oneOf(messageIds))) 
             .fetch()
         : [];
       const existingMessagesMap = new Map(
         existingMessages.map(msg => [msg._id, msg])
       );
-  
+
       // Duyệt qua từng room và messages
       for (const { roomId, messages } of pendingMessages) {
         // Kiểm tra roomId hợp lệ
@@ -124,11 +147,11 @@ export default class MessageRepository {
           console.warn(`Invalid roomId: ${roomId}, skipping messages`);
           continue;
         }
-  
+
         for (const msg of messages) {
           // Chuẩn hóa createdAt và updatedAt thành số
          // Kiểm tra và chuẩn hóa thời gian
-          const parseTimestamp = (date: any): number => {
+          const parseTimestamp = (date: any): number => {            
             if (!date) return Date.now();
             if (typeof date === 'string') {
               const parsedDate = new Date(date);
@@ -159,6 +182,7 @@ export default class MessageRepository {
                   message.senderId = msg.senderId || existingMessage.senderId;
                   message.createdAt = createdAtNum;
                   message.updatedAt = updatedAtNum
+                  message.roomId = roomId;
                   message.type =
                     (msg.type as MessageContentType) || existingMessage.type || MessageContentType.TEXT;
                   message.status =
@@ -169,18 +193,13 @@ export default class MessageRepository {
               );
             }
           } else {
-            // Nếu tin nhắn chưa tồn tại, tạo mới
-            if (!msg.senderId) {
-              console.warn(`Invalid senderId for message: ${msg.id}, skipping`);
-              continue;
-            }
-  
+           
             preparedMessages.push(
               messagesCollection.prepareCreate((message: MessageModel) => {
                 message._id = msg.id || nanoid();
-                message.content = msg.content || 'aaa';
+                message.content = msg.content || '';
                 message.roomId = roomId;
-                message.senderId = msg.senderId || nanoid();
+                message.senderId = msg.senderId || '';
                 message.createdAt =createdAtNum;
                 message.updatedAt = updatedAtNum
                 message.type = (msg.type as MessageContentType) || MessageContentType.TEXT;
@@ -190,7 +209,8 @@ export default class MessageRepository {
             );
           }
         }
-      }
+      }      
+      
       return preparedMessages;
     } catch (error) {
       console.error('Error preparing messages:', error);
@@ -209,78 +229,103 @@ export default class MessageRepository {
       await writeFn();
     }
   }
-  // Hàm cập nhật tin nhắn sau khi gửi thành công lên server
+
   async updateSentMessage(
     tempId: string,
     serverMessage: _MessageSentRes,
     messageRepository: MessageRepository,
-    roomRepository: RoomRepository,
+    roomRepository: RoomRepository
   ): Promise<void> {
     try {
       await database.write(async () => {
-        const localMessages = await messageRepository.messagesCollection.query(Q.where('_id', tempId)).fetch();
-        if (localMessages.length === 0) {
-          console.warn(`Local message with tempId ${tempId} not found`);
-        } else {
-          await localMessages[0].destroyPermanently(); // Xóa bản ghi cũ
-        }
+        // Tìm tin nhắn local có tempId
+        const localMessages = await messageRepository.messagesCollection
+          .query(Q.where('_id', tempId))
+          .fetch();
 
-        const messagePrepare = this.prepareMessages([{ roomId: serverMessage.roomId, messages: [serverMessage] }]);
-        await database.batch(messagePrepare[0]);
-        await roomRepository.updateRoomLastMessage(serverMessage.roomId, messagePrepare[0], 1);
-        console.log(`Message updated from ${tempId} to ${serverMessage.id}`);
+  
+        if (localMessages.length > 0) {
+          
+          // Cập nhật tin nhắn thay vì xoá
+          await localMessages[0].update(message => {
+            message._id = serverMessage.id; 
+            message.updatedAt = Number(serverMessage.updatedAt);
+            message.senderId = serverMessage.senderId,
+            message.status = serverMessage.status || MessageViewStatus.SENT,
+            message.replyMessageId = serverMessage.replyMessageId
+          });          
+          
+        } else {          
+          // Nếu không tìm thấy tin nhắn, thêm mới
+          const messagePrepare = await this.prepareMessages([
+            { roomId: serverMessage.roomId, messages: [serverMessage] },
+          ]);
+
+          await messageRepository.batchMessages(messagePrepare, false);
+        }
+  
       });
+  
     } catch (error) {
-      console.error(`Failed to update sent message ${tempId}:`, error);
+      console.error(`❌ Failed to update sent message ${tempId}:`, error);
       throw error;
     }
   }
+  
+
   async getMessages(
     roomId: string,
     options: PageOptionsDto = {},
     messageRepository: MessageRepository,
   ): Promise<CursorPaginatedRes<MessageItemView>> {
     try {
-
-      const { limit = 20 , afterCursor, beforeCursor} = options;
-
+      console.log('111111111111111111111');
+      
+      const { limit = 20, afterCursor, beforeCursor } = options;
+      console.log('beforeCursor', beforeCursor);
+      
+  
       let query: Query<any> = messageRepository.messagesCollection.query(
         Q.where('room_id', roomId),
         Q.sortBy('created_at', Q.desc),
       );
-
+  
       if (afterCursor) {
         query = query.extend(Q.where('created_at', Q.gt(afterCursor)));
       }
       if (beforeCursor) {
         query = query.extend(Q.where('created_at', Q.lt(beforeCursor)));
       }
-
+  
       const totalRecords = await query.fetchCount();
       const messages = await query.fetch();
-
       const limitedMessages = messages.slice(0, limit);
 
-      const resultMessages: MessageItemView[] = limitedMessages.map(msg => (
-        {        
+      const limitedMessagesData = limitedMessages.map(msg => msg._raw);
+      
+      // Ánh xạ dữ liệu vào MessageItemView
+      const resultMessages: MessageItemView[] = limitedMessagesData.map(msg => ({
         id: msg.id,
-        content:msg.content,
+        content: msg.content,
         type: msg.type as MessageContentType,
         senderId: msg.sender_id,
         roomId: msg.room_id,
         status: msg.status,
         replyMessageId: msg.reply_message_id,
         revoked: msg.revoked,
-        createdAt: new Date(msg._raw.created_at),
-        updatedAt:new Date( msg._raw.updated_at),
-      }));
+        createdAt: new Date(msg.created_at),
+        updatedAt: new Date(msg.updated_at),
+        sender: msg.sender_id, 
+      }));      
 
-      
-      const endCursor = resultMessages.length > 0 ?
-       resultMessages[resultMessages.length - 1].createdAt.getTime() : undefined;
-      const startCursor = resultMessages.length > 0 ?
-       resultMessages[0].createdAt.getTime() : undefined;
-       
+      const endCursor = resultMessages.length > 0
+        ? resultMessages[resultMessages.length - 1].createdAt.getTime()
+        : undefined;
+      const startCursor = resultMessages.length > 0
+        ? resultMessages[0].createdAt.getTime()
+        : undefined;
+
+        
       return {
         data: resultMessages,
         pagination: {
@@ -295,5 +340,6 @@ export default class MessageRepository {
       throw error;
     }
   }
+  
 
 }

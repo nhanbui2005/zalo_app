@@ -3,7 +3,7 @@ import { RoomType } from "@/constants/entity.enum";
 import { AbstractEntity } from "@/database/entities/abstract.entity";
 import { Column, Entity, JoinColumn, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { MessageEntity } from "../../message/entities/message.entity";
-import { MemberEntity } from "../../message/entities/member.entity";
+import { MemberEntity } from "../../members/entities/member.entity";
 
 const MEMBER_LIMIT = 99
 

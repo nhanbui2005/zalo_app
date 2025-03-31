@@ -4,7 +4,7 @@ import { MessageController } from './message.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from '../user/entities/user.entity';
 import { ChatRoomEntity } from '../chat-room/entities/chat-room.entity';
-import { MemberEntity } from './entities/member.entity';
+import { MemberEntity } from '../members/entities/member.entity';
 import { MessageEntity } from './entities/message.entity';
 import { LoggerMiddleware } from 'src/middleware/guard-socket.middleware';
 import { AuthModule } from '../auth/auth.module';

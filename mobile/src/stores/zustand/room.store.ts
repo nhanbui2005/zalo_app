@@ -5,11 +5,9 @@ import { RoomService } from "~/features/room/roomService";
 
 interface RoomStore {
   rooms: Room[];
-  currentRoomId: string;
   currentRoom: {roomAvatar: string, roomName: string} | null;
   setCurrentRoom: (room: {roomAvatar: string, roomName: string}) => void;
   currentPartnerId: string;
-  resetCurrentRoomId: (roomId: string) => void;
   resetCurrentPartnerId: (partnerId: string) => void;
   unReadMessagesRooms: Record<string, number>;
   fetchRooms: () => Promise<void>;
@@ -19,17 +17,14 @@ interface RoomStore {
 
 export const useRoomStore = create<RoomStore>((set) => ({
   rooms: [],
-  currentRoomId: "",
   currentRoom: null,
   currentPartnerId: "",
   unReadMessagesRooms: {},
 
-  resetCurrentRoomId: (roomId: string) => {
-    set({ currentRoomId: roomId });
-  },
   resetCurrentPartnerId: (partnerId: string) => {
     set({ currentPartnerId: partnerId });
   },
+
   setCurrentRoom: (room: {roomAvatar: string, roomName: string}) => {
     set({ currentRoom: room });
   },
@@ -57,7 +52,6 @@ export const useRoomStore = create<RoomStore>((set) => ({
   clear: () => {
     set({
       rooms: [],
-      currentRoomId: "",
       currentPartnerId: "",
       unReadMessagesRooms: {},
     });

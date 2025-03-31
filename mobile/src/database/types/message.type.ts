@@ -1,6 +1,7 @@
 import { MessageContentType, MessageSource, MessageViewStatus } from "~/features/message/dto/message.enum";
+import { UserItemBaseView } from "./user.typee";
 
-export interface MessageItemView {
+export interface MessageItem {
     id: string,
     content: string,
     senderId: string,
@@ -11,6 +12,9 @@ export interface MessageItemView {
     revoked: boolean, 
     createdAt: Date; 
 }
+export interface MessageItemView extends MessageItem {
+    sender?: UserItemBaseView
+}
 
 export interface MessageItemDisplay extends MessageItemView {
     isSelfSent: boolean;
@@ -19,10 +23,4 @@ export interface MessageItemDisplay extends MessageItemView {
     isDisplayAvatar?: boolean;
     isDisplayStatus?: boolean;
     source: MessageSource;
-    messageStatus?: MessageViewStatus;
-    sender: {
-      id: string;
-      name: string;
-      avatar: string;
-    };
   }

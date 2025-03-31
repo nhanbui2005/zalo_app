@@ -9,3 +9,11 @@ export interface UserItemView {
     isOnline: boolean
     lastedOnline: number
 }
+
+
+export interface UserItemBaseView {
+    id: string,
+    username: string,
+    preferredName?: string,
+    avatarUrl: string,
+}

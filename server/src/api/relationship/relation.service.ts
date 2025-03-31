@@ -3,8 +3,7 @@ import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { HandleRequestToAddFriendReqDto } from './dto/handle-req.req.dto';
 import { RelationEntity } from './entities/relation.entity';
-import { RelationResDto } from './dto/list-relation.res.dto';
-import { UserEntity } from '../user/entities/user.entity';
+import { RelationResDto } from './dto/list-relation.res.dto';import { UserEntity } from '../user/entities/user.entity';
 import { Uuid } from '@/common/types/common.type';
 import { plainToInstance } from 'class-transformer';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -17,6 +16,8 @@ import { ChatRoomService } from '../chat-room/chat-room.service';
 import { RoomResDto } from '../chat-room/dto/room.res.dto';
 import { UserResDto } from '../user/dto/user.res.dto';
 import { UserService } from '../user/user.service';
+import { MemberResDto } from './dto/member.res.dto';
+import { MemberEntity } from '../members/entities/member.entity';
 
 @Injectable()
 export class RelationService {
@@ -25,6 +26,8 @@ export class RelationService {
     private readonly relationRepository: Repository<RelationEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(MemberEntity)
+    private readonly memberRepository: Repository<MemberEntity>,
     private userService: UserService,
     private eventEmitter: EventEmitter2,
     private chatRoomService: ChatRoomService
@@ -82,7 +85,9 @@ export class RelationService {
     
     let room: RoomResDto | null = null;
     let user: UserResDto | null = null;    
-
+    let memberId : Uuid | null = null; 
+    let memberMeId: Uuid | null = null
+    
     if (
       dto.action === RelationAction.DECLINE ||  //Từ chối kết bạn
       dto.action === RelationAction.REVOKE      //Thu hồi lời mời
@@ -117,26 +122,42 @@ export class RelationService {
           updatedAt: requester.updatedAt
         };
       }
+      //đang viết code cho phần member á nha 3/26/2025
+      // Lấy danh sách thành viên của phòng chat
+      if (room) {
+        const roomId = room.id as Uuid
+        const roomMembers = await this.memberRepository.find(
+          {where: {roomId: roomId}}
+        );
+        roomMembers.forEach(member => {
+          if ( member.userId == myId) {
+            memberMeId = member.id
+          }else {
+            memberId = member.id
+          } 
+        });
+      }
     }
     //gửi sự kiện sau khi handle relation request
     this.eventEmitter.emit(
       EventEmitterKey.UPDATE_RELATION_REQ,
       {
-        userId: relation.requesterId == myId ? relation.handlerId : relation.requesterId,
-        RelationStatus: relation.status,
+        status: relation.status,
+        memberId: memberId,
+        memberMeId: memberId,
         room: room,
         user: user,
       }
     )
 
      const a = plainToInstance(RelationResDto, {
-      ...relation,
+      status: relation.status,
+      memberId,
+      memberMeId,
       room,
       user,
-      createdBy: SYSTEM_USER_ID,
-      updatedBy: SYSTEM_USER_ID
     });  
-    console.log(a);
+    console.log('aaaaa', a);
     
     return a
   }

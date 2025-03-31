@@ -9,19 +9,33 @@ import { MessageContentType, MessageViewStatus } from "../message/dto/message.en
 import { _MessageSentRes } from "../message/dto/message.dto.parent";
 import { RelationStatus } from "./dto/relation.dto.enum";
 import MemberRepository from "~/database/repositories/MemberRepository";
+import UserRepository from '~/database/repositories/UserRepository';
+import { UserBase } from '../user/dto/user.dto.nested';
+import { MemberRole } from '~/database/types/member.type';
 
-
-export const syncWhenAcceptRequest = async (
-  room: _RoomRes,
-  requesterId: string,
-  handlerId: string,
+interface SyncRequestParams {
+  room: _RoomRes;
+  requesterId: string;
+  handlerId: string;
   meId: string,
-): Promise<void> => {
-
-  const msgRepo = new MessageRepository();
-  const roomRepo =new RoomRepository();
-  const memberRepo =new MemberRepository();
-
+  memberMeId: string;
+  memberId: string;
+  userBase: UserBase;
+}
+export const syncWhenAcceptRequest = async ({
+  room,
+  requesterId,
+  handlerId,
+  meId,
+  memberMeId,
+  memberId,
+  userBase,
+}: SyncRequestParams): Promise<void> => {
+  const msgRepo = MessageRepository.getInstance();
+  const roomRepo = RoomRepository.getInstance();
+  const memberRepo = MemberRepository.getInstance();
+  const userRepo = UserRepository.getInstance(); 
+  
   try {
     await database.write(async () => {
       // Kiểm tra bạn bè
@@ -34,18 +48,25 @@ export const syncWhenAcceptRequest = async (
       };
 
       let messageContent: string | undefined;
+      let newUsers: any[] = [];
 
       if (meId === requesterId) {
+
         const handlerIsFriend = await isFriend(handlerId);
         if (!handlerIsFriend) {
           messageContent = 'vừa kết bạn';
+          newUsers.push({ user: userBase, relationStatus: RelationStatus.FRIEND });
         }
       } else if (meId === handlerId) {
         const requesterIsFriend = await isFriend(requesterId);
         if (!requesterIsFriend) {
           messageContent = 'đã đồng ý kết bạn';
+          newUsers.push({ user: userBase, relationStatus: RelationStatus.FRIEND });
         }
       }
+
+      // Nếu có user mới cần thêm, chuẩn bị dữ liệu
+      let preparedUsers = newUsers.length > 0 ? await userRepo.prepareUsers(newUsers) : [];
 
       const roomData: _RoomRes = {
         ...room,
@@ -68,8 +89,14 @@ export const syncWhenAcceptRequest = async (
       const preparedRooms = await roomRepo?.prepareRooms([roomData]);
       const newRoom = preparedRooms[0];
 
-      const userIds = [requesterId, handlerId];
-      const preparedMembers = await memberRepo.prepareMembers(roomData.id, userIds, ['member']);
+      const preparedMembers = await memberRepo.prepareMembers(
+        [
+          { userId: userBase.id, memberId: memberId, role: MemberRole.MEMBER },
+          {userId: meId, memberId: memberMeId, role: MemberRole.MEMBER }
+        ],
+        room.id
+      );
+          
 
       if (messageContent) {
         const pendingMessages: { roomId: string; messages: Partial<_MessageSentRes>[] }[] = [
@@ -79,23 +106,23 @@ export const syncWhenAcceptRequest = async (
               {
                 id: `temp-${nanoid()}`,
                 content: messageContent,
-                senderId: meId,
+                senderId: '',
                 replyMessageId: '',
                 roomId: roomData.id,
                 type: MessageContentType.TEXT,
-                status: MessageViewStatus.SENT,
                 revoked: false,
                 createdAt: new Date(),
                 updatedAt: new Date(),
               },
             ],
           },
-        ];
+        ];        
 
         const preparedMessages = await msgRepo.prepareMessages(pendingMessages);
-        await database.batch(newRoom, ...preparedMembers, ...preparedMessages);
+
+        await database.batch(newRoom, ...preparedMembers, ...preparedMessages, ...preparedUsers);
       } else {
-        await database.batch(newRoom, ...preparedMembers);
+        await database.batch(newRoom, ...preparedMembers, ...preparedUsers);
       }
     });
   } catch (error) {
@@ -103,3 +130,4 @@ export const syncWhenAcceptRequest = async (
     throw error;
   }
 };
+

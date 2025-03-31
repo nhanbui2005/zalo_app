@@ -12,6 +12,7 @@ import { StatusGateway } from './gateways/status.gateway';
 import { WsAuthService } from './events.service'; // Nếu có
 import { UserModule } from '@/api/user/user.module';
 import { AuthModule } from '@/api/auth/auth.module';
+import { MessagesGateway } from './gateways/message.gateway';
 
 @Module({
   imports: [
@@ -33,13 +34,13 @@ import { AuthModule } from '@/api/auth/auth.module';
     }),
   ],
   providers: [
-    // MessagesGateway,
+    MessagesGateway,
     NotificationsGateway,
     StatusGateway,
     WsAuthService
   ],
   exports: [
-    // MessagesGateway,
+    MessagesGateway,
     NotificationsGateway,
     StatusGateway,
   ],

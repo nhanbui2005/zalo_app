@@ -17,7 +17,6 @@ const loadMoreMessagesAPI = async ({roomId, afterCursor, beforeCursor}) => {
     let q = `${messageUrl}?roomId=${roomId}`
     if (afterCursor) q += `&afterCursor=${afterCursor}`
     if (beforeCursor) q += `&beforeCursor=${beforeCursor}` 
-    console.log('cccc');
          
     const result =  await AxiosInstant.get(q)
     return {

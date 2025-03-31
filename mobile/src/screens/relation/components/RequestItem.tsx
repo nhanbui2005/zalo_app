@@ -16,14 +16,10 @@ import {
 } from '~/features/relation/dto/relation.dto.enum';
 import {Assets} from '~/styles/Ui/assets';
 import { useRelationStore } from '~/stores/zustand/relation.store';
-import { database } from '~/database';
 import { useSelector } from 'react-redux';
 import { appSelector } from '~/features/app/appSlice';
-import MessageRepository from '~/database/repositories/MessageRepository';
-import RoomRepository from '~/database/repositories/RoomRepository';
 import { relationApi } from '~/features/relation/relationApi';
 import { syncWhenAcceptRequest } from '~/features/relation/relationService';
-import MemberRepository from '~/database/repositories/MemberRepository';
 
 export interface RequestItemProps {
   relation: Relation;
@@ -33,8 +29,8 @@ export interface RequestItemProps {
 const RequestItem = React.memo(({ relation, itemOnPress }: RequestItemProps) => {
 
   const mainNav = useNavigation<MainNavProp>();
+   const { meData } = useSelector(appSelector);
  
-  const {meData } = useSelector(appSelector)
   const { relations_Changing, changingStatusRelation } = useRelationStore();
 
   const [_send, _setSend] = useState<boolean>(true);
@@ -123,17 +119,21 @@ const RequestItem = React.memo(({ relation, itemOnPress }: RequestItemProps) => 
 
     relationApi.handleRequest(req)
       .then((res) => { 
+               console.log(res);
                
         handleWithAction(action)
-
-        if (res.room && res.user && meData) {
+        
+        if (res.room && res.user && meData && res.memberId && res.memberMeId) {
           
-          syncWhenAcceptRequest(
-            res.room,
-            res.requesterId,
-            res.handlerId,
-            meData?.id,
-          )
+          syncWhenAcceptRequest({
+            room: res.room,
+            userBase: res.user,
+            handlerId: meData.id,
+            requesterId: res.user.id,
+            meId: meData.id,
+            memberId: res.memberId,
+            memberMeId: res.memberMeId,
+          })
         }
       })
       .catch(error => {
