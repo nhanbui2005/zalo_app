@@ -282,9 +282,7 @@ const Input = ({ roomId }) => {
   }
 
   useEffect(() => {    
-    if (textContent && !isMeWriting) {
-      console.log('memberId', memberId);
-      
+    if (textContent && !isMeWriting) {      
       emitEvent('messages','writing-message', {
         roomId,
         memberId,

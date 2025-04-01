@@ -7,6 +7,7 @@ interface EmojiListProps {
 }
 
 const EmojiList: React.FC<EmojiListProps> = React.memo(({ onEmojisTextChange }) => {
+  
   const handleEmojiPress = useCallback((emoji: string) => {
     onEmojisTextChange(emoji);
   }, []);

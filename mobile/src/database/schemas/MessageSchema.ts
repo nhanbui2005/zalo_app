@@ -12,7 +12,7 @@ export const messageConfig: {
     { name: 'sender_id', type: 'string', isOptional:true },
     { name: 'room_id', type: 'string' },
     { name: 'type', type: 'string' },
-    { name: 'status', type: 'boolean' },
+    { name: 'status', type: 'string' },
     { name: 'reply_message_id', type: 'string', isOptional: true },
     { name: 'revoked', type: 'boolean' },
     { name: 'emojis', type: 'string', isOptional: true },

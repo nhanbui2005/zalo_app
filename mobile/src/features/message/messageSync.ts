@@ -108,6 +108,7 @@ export async function syncNewMessage(
   roomRepository: RoomRepository,
   messageRepository: MessageRepository,
 ): Promise<void> {
+console.log('new', newMessage);
 
   if (!newMessage) return;
   const roomId = newMessage.roomId || `temp-${nanoid}`;

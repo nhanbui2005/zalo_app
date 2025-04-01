@@ -5,10 +5,9 @@ import { RelationStatus } from '~/features/relation/dto/relation.dto.enum';
 import { UserItemBaseView, UserItemView } from '../types/user.typee';
 import { _HandleRequestRes, _SendRequestRes } from '~/features/relation/dto/relation.dto.parent';
 import { _UserRes } from '~/features/user/dto/user.dto.parent';
-import { FriendStatusSocket } from '~/socket/SocketProvider';
 import { map, Observable } from 'rxjs';
 import MemberModel from '../models/MemberModel';
-import { UserBase } from '~/features/user/dto/user.dto.nested';
+import { MemberStatus } from '~/features/user/dto/user.dto.nested';
 
 export default class UserRepository {
   private static instance: UserRepository; // Lưu instance duy nhất
@@ -87,16 +86,20 @@ export default class UserRepository {
       });
     });
   }
-  async updateOnlineStatus(friendStatus: FriendStatusSocket): Promise<void> {
-    const { userId, isOnline, lastOnline } = friendStatus
-    await database.write(async () => {
-      const user = await this.usersCollection.find(userId);
-      await user.update((userRecord: UserModel) => {
-        userRecord.isOnline = isOnline;
-        userRecord.lastOnline = Number(lastOnline);
-      });
+  async updateUserStatus(userId: string, updates: { isOnline: boolean; lastOnline: number }) {
+    await this.usersCollection.database.write(async () => {
+      try {
+        const user = await this.usersCollection.find(userId);
+        await user.update((userRecord: any) => {
+          userRecord.isOnline = updates.isOnline;
+          userRecord.lastOnline = updates.lastOnline;
+        });
+      } catch (error) {
+        throw new Error(`Lỗi khi cập nhật trạng thái user ${userId}: ${error}`);
+      }
     });
   }
+  
   async prepareUsers(userWithRelations: { user: _UserRes; relationStatus: RelationStatus }[]): Promise<UserModel []> {
     // Lấy danh sách user IDs từ mảng pending
     const userIds = userWithRelations.map(item => item.user.id);

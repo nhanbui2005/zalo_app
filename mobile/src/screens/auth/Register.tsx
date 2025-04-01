@@ -1,21 +1,13 @@
 
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import * as Yup from 'yup';
 import { Formik } from 'formik';
-// import { authScreenStyle } from '~/styles/screens/authScreenStyle';
-// import { registerUser } from '~/features/auth/authService'; 
-// import { useAppDispatch } from '../../app/store';
-
 import React from 'react';
-// import Button from '~/components/Ui/Button';
 import Input from '~/components/Ui/Input-form';
-import { Assets } from '~/styles/Ui/assets';
 import { colors } from '~/styles/Ui/colors';
 import AppButton from '~/components/Ui/Button';
-// import CheckBox from '~/components/UI/CheckBox';
 
 const Register: React.FC = () => {
-  // const dispatch = useAppDispatch();
 
   const registerValidationSchema = Yup.object().shape({
     username: Yup.string().required('Username is required'),
@@ -24,7 +16,7 @@ const Register: React.FC = () => {
       .required('Email is required'),
     password_register: Yup.string()
       .min(6, 'Password must be at least 6 characters')
-      .required('Password is required'), // Bắt buộc
+      .required('Password is required'), 
   });
 
   return (

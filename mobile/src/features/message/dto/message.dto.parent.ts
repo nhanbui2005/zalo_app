@@ -6,7 +6,8 @@ export interface _MessageSentReq {
   roomId: string;
   content: string;
   contentType: MessageContentType;
-  replyMessageId: string,
+  replyMessageId: string;
+ 
 }
 export interface _MessageSentRes
   extends Pick<
@@ -19,5 +20,7 @@ export interface _MessageSentRes
   replyMessage?: _MessageSentRes;
   isSelfSent?: boolean;
   createdAt: Date;
-  updatedAt: Date
+  updatedAt: Date;
+  onlineUsersRoom: string[];
+  offlineUsersRoom: string[]
 }

@@ -3,7 +3,6 @@ import { Animated, StyleSheet, Text, View } from 'react-native';
 import { textStyle } from '~/styles/Ui/text';
 import { colors } from '~/styles/Ui/colors';
 import useSocketEvent from '~/hooks/useSocket ';
-import { isSocketConnected } from '~/socket/socket';
 
 interface Props {
   isGroup: boolean;
@@ -11,7 +10,6 @@ interface Props {
 
 const StatusChat = ({ isGroup }: Props) => {
   const [typingUser, setTypingUser] = React.useState<string | null>(null);
-console.log('typingUser', typingUser);
 
   useSocketEvent<{ userName: string }>({
     event: 'writing_message',

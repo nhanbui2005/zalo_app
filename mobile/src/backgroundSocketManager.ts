@@ -9,11 +9,14 @@ import { syncWhenAcceptRequest } from './features/relation/relationService';
 import { HandleAcceptReqDataSocket } from './socket/types/relation';
 import { keyMMKVStore, MMKVStore, storage } from './utils/storage';
 import { messageEntity } from './features/message/messageEntity';
+import { syncUserStatus } from './features/user/userSync';
+import UserRepository from './database/repositories/UserRepository';
 
 // Hàm chạy trong background
 const backgroundSocketTask = async (taskData) => {
   const messageRepo = MessageRepository.getInstance();
   const roomRepo = RoomRepository.getInstance();
+  const userRepo = UserRepository.getInstance();
   const setMemberMyIds = MMKVStore.getSetMemberIdsFromMMKV(); 
   const { namespace, accessToken, userId } = taskData;
   let socket : any = null;
@@ -37,16 +40,20 @@ const backgroundSocketTask = async (taskData) => {
         console.error('Error syncing pending messages:', error);
       }
     });
+    socket.on('received_msg', async (data)=>{
+      try {
+        const {userId, receivedAt} = data
+        await syncUserStatus(userId, receivedAt, userRepo)
+      } catch (error) {
+        
+      }
+    })
 
     socket.on('new_message', async (data: messageEntity) => {
       try {        
         if (data.senderId) {
-          console.log('senderId', data.senderId);   
-          console.log('setMemberMyIds', setMemberMyIds);
           if ( setMemberMyIds.has(data.senderId)) return
         }
-        console.log('đi tiếp');
-        
         await syncNewMessage(data, roomRepo, messageRepo, );
       } catch (error) {
         console.error('Error syncing new message:', error);

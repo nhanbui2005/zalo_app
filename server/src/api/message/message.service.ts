@@ -9,6 +9,7 @@ import { MessageEntity } from './entities/message.entity';
 import {
   MemberRole,
   MessageContentType,
+  MessageViewStatus,
   RoomType,
 } from '@/constants/entity.enum';
 import { CursorPaginatedDto } from '@/common/dto/cursor-pagination/paginated.dto';
@@ -196,8 +197,11 @@ export class MessageService {
       msgData: newMsg,
       createdAt: new Date(),
     } as NewMessageEvent);
-    
-    return newMsg
+
+    const messageStatus = onlineUsersRoom.length > 0 ?
+     MessageViewStatus.RECEIVED : MessageViewStatus.SENT 
+         
+    return plainToInstance(MessageResDto, {...newMsg, status: messageStatus});
   }
 
   async loadMoreMessage(

@@ -4,7 +4,7 @@ const sockets = {};
 
 export const connectSocket = (namespace) => {  
   if (!sockets[namespace]) {    
-    sockets[namespace] = io(`http://192.168.1.6:7777/${namespace}`, {
+    sockets[namespace] = io(`http://192.168.1.21:7777/${namespace}`, {
       transports: ["websocket"],
       auth: {
         token: `Bearer ${localStorage.getItem("accessToken")}`,

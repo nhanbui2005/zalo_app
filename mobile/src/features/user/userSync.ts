@@ -12,9 +12,23 @@ export async function syncUsers(
     await userRepository.batchUsers(preparedUsers);
 }
 
+export async function syncUserStatus(
+  userId: string, 
+  receivedAt: number,
+  userRepository: UserRepository
+): Promise<void> {
+  try {
+    await userRepository.updateUserStatus(userId, {
+      isOnline: true,
+      lastOnline: receivedAt,
+    });
+
+    console.log(`Cập nhật trạng thái thành công cho user: ${userId}`);
+  } catch (error) {
+    console.error(`Lỗi khi cập nhật trạng thái user ${userId}:`, error);
+  }
+}
+
+  
 
 
-
-// export const syncWhenFriendConnect = async ( friendStatus: FriendStatusSocket):Promise<void> => {
-//     try {
-// }

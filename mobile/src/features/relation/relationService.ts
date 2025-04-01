@@ -97,8 +97,7 @@ export const syncWhenAcceptRequest = async ({
         room.id
       );
           
-
-      if (messageContent) {
+      if (messageContent) {        
         const pendingMessages: { roomId: string; messages: Partial<_MessageSentRes>[] }[] = [
           {
             roomId: roomData.id,

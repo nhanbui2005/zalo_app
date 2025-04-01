@@ -39,9 +39,9 @@ type Props = {
 
 // Object ánh xạ trạng thái tin nhắn
 const StatusString: any = {
-  [MessageViewStatus.SENT]: 'Sent',
-  [MessageViewStatus.RECEIVED]: 'Received',
-  [MessageViewStatus.VIEWED]: 'Viewed',
+  [MessageViewStatus.SENT]: 'Đã gửi',
+  [MessageViewStatus.RECEIVED]: 'Đã nhận',
+  [MessageViewStatus.VIEWED]: 'Đã xem',
 };
 
 const getUniqueId = () => {
@@ -150,7 +150,7 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
   const replyMessage = replyMessageId
     ? { id: replyMessageId, content: 'Reply content', sender: { user: { username: 'User' } } }
     : undefined;
-
+    
   return (
     <>
      {messageSystemAccetp ? 

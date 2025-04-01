@@ -6,7 +6,7 @@ import { RelationStatus } from '~/features/relation/dto/relation.dto.enum';
 import { userApi } from '~/features/user/userService'; 
 
 export const useUserList = (status: RelationStatus) => {
-  const userRepo = new UserRepository();
+  const userRepo = UserRepository.getInstance();
   const [users, setUsers] = useState<UserItemView[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -17,11 +17,8 @@ export const useUserList = (status: RelationStatus) => {
       setUsers(localUsers);
       setIsLoading(false);
 
-      if (localUsers.length === 0) {
-        console.log('trống');
-        
+      if (localUsers.length === 0) {        
         try {
-          const userRepository = new UserRepository();
           setIsLoading(true);
 
           const serverUsers = await userApi.getAllFriends();
@@ -29,9 +26,9 @@ export const useUserList = (status: RelationStatus) => {
             user: item,
             relationStatus: RelationStatus.FRIEND
           }));          
-          const preparedUsers = await userRepository.prepareUsers(userWithRelations);
+          const preparedUsers = await userRepo.prepareUsers(userWithRelations);
 
-          await userRepository.batchUsers(preparedUsers);
+          await userRepo.batchUsers(preparedUsers);
         } catch (error) {
           console.error('Error fetching users from API:', error);
           setIsLoading(false); // Dừng loading nếu có lỗi
@@ -39,9 +36,8 @@ export const useUserList = (status: RelationStatus) => {
       }
     });
 
-    // Cleanup subscription khi component unmount
     return () => subscription.unsubscribe();
-  }, [status]); // Thêm status vào dependency array để gọi lại khi status thay đổi
+  }, [status]); 
 
   return { users, isLoading };
 };

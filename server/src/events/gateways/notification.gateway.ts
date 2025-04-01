@@ -24,6 +24,7 @@ import { NewMessageEvent } from '../dto/message.gateway.dto';
 
 const CHAT_ROOM = 'CHAT_ROOM_';
 const SOCKET_ROOM = 'socket_room:';
+const SOCKET_FRIEND = 'socket_friend:';
 
 @WebSocketGateway(
   { 
@@ -89,7 +90,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
    }
   }
   async handleDisconnect(@ConnectedSocket() client: Socket): Promise<void> {
-    try {      
+    try {
       const userId = await this.getUserId(client);
       if (!userId) return;
 
@@ -217,6 +218,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
           roomId,
           messages,
         });
+        this.server.to(SOCKET_ROOM + roomId).emit(SocketEmitKey.RECEIVED_MSG, 
+          {
+            userId: userId,
+            receivedAt: new Date(),
+          }
+        );
+
       });
 
     await Promise.all(messagePromises);
@@ -230,13 +238,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         { userId: userId as Uuid },
         { msgRTime: new Date() },
       ),
-      ...members.map((member) =>
-        this.server.to(CHAT_ROOM + member.roomId).emit(SocketEmitKey.RECEIVED_MSG, {
-          roomId: member.roomId,
-          memberId: member.id,
-          receivedAt: new Date(),
-        }),
-      ),
+      // ...members.map((member) =>
+      //   this.server.to(CHAT_ROOM + member.roomId).emit(SocketEmitKey.RECEIVED_MSG, {
+      //     roomId: member.roomId,
+      //     memberId: member.id,
+      //     receivedAt: new Date(),
+      //   }),
+      // ),
     ]);
   }
 
@@ -307,7 +315,6 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       }
     });
     sub.on('pmessage', async (pattern, channel, key) => {  
-          console.log('aaaaaaaa');
           
       if (key.startsWith('poit-user-disconnect:')) {
 

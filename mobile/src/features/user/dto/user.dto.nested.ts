@@ -12,3 +12,9 @@ export interface UserFriend extends Pick<UserEntity,
  export interface UserBase extends Pick<UserEntity,'id' | 'username' | 'avatarUrl'>{
     
  }
+
+ export interface MemberStatus {
+   memberId: string;
+   isOnline: boolean;
+   lastOnline: Date;
+ }

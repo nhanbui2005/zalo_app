@@ -143,10 +143,10 @@ const ChatScreen: React.FC = () => {
         <ReplyMessageComponent ref={replyingRef} />
 
         <BottomSheetComponent
-          roomId={currentRoomId ?? ''}
-          onTextChange={handleInputChange}
-          onEmojiChange={handleEmojiChange}
-        />
+            roomId={currentRoomId ?? ''}
+            onTextChange={handleInputChange}
+            onEmojiChange={handleEmojiChange}
+          />
       </View>
     </SocketProvider>
   );

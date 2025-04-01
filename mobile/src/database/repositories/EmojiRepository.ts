@@ -12,7 +12,7 @@ export class EmojiRepository {
           emoji.memberId = emojiData.memberId;
           emoji.messageId = emojiData.messageId;
           emoji.content = emojiData.content;
-          emoji.createdAt = emojiData.createdAt;
+          emoji.createdAt = Number(emojiData.createdAt);
         });
       }
     });
@@ -55,7 +55,7 @@ export class EmojiRepository {
         emoji.memberId = emojiData.userId;
         emoji.messageId = messageId;
         emoji.content = emojiData.emoji;
-        emoji.createdAt = emojiData.createdAt;
+        emoji.createdAt = Number(emojiData.createdAt);
       });
     }
   }

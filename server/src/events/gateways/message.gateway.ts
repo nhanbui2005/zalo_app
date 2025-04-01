@@ -33,8 +33,7 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   ) {}
 
   async handleConnection(@ConnectedSocket()client: Socket) {
-    console.log('nokia');
-    
+    console.log('nokia');    
   }
 
   async handleDisconnect(@ConnectedSocket() client: Socket) {

@@ -16,8 +16,6 @@ import NetInfo from '@react-native-community/netinfo';
 import { startBackgroundSocketTask } from '~/backgroundSocketManager';
 import { keyMMKVStore, MMKVStore, storage } from '~/utils/storage';
 import MemberRepository from '~/database/repositories/MemberRepository';
-import ChatScreen from '~/screens/chat/ChatScreen';
-import ZaloBottomSheet from '~/screens/ZaloBottomSheet';
 
 
 const App = () => {
@@ -26,85 +24,84 @@ const App = () => {
   const dispatch = useDispatch();
   
 
-  // //load data
-  // useEffect(() => {
-  //   const fetchAndSaveMemberIds = async () => {
-  //     if (meData?.id) {
-  //       const memberRepo = MemberRepository.getInstance();
-  //       const ids = await memberRepo.getMemberMeIdInAllRoom(meData.id);
-  //       MMKVStore.saveMemberIdsToMMKV(ids ?? []); 
-  //     }
-  //   };
+  // load data
+  useEffect(() => {
+    const fetchAndSaveMemberIds = async () => {
+      if (meData?.id) {
+        const memberRepo = MemberRepository.getInstance();
+        const ids = await memberRepo.getMemberMeIdInAllRoom(meData.id);
+        MMKVStore.saveMemberIdsToMMKV(ids ?? []); 
+      }
+    };
   
-  //   fetchAndSaveMemberIds(); 
-  // }, [meData?.id]);
+    fetchAndSaveMemberIds(); 
+  }, [meData?.id]);
   
 
-  // // folow trạng thái Wi-Fi
-  // useEffect(() => {
+  // folow trạng thái Wi-Fi
+  useEffect(() => {
     
-  //   checkNetwork();
+    checkNetwork();
 
-  //   const unsubscribe = NetInfo.addEventListener((state) => {
-  //     const isWifiConnected = state.type === 'wifi';
-  //     dispatch(setNetworkState(isWifiConnected));
-  //     console.log('Wi-Fi state changed:', isWifiConnected);
-  //   });
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const isWifiConnected = state.type === 'wifi';
+      dispatch(setNetworkState(isWifiConnected));
+      console.log('Wi-Fi state changed:', isWifiConnected);
+    });
 
-  //   return () => unsubscribe();
-  // }, []);
+    return () => unsubscribe();
+  }, []);
 
-  // //check auth
-  // useEffect(() => {
-  //   const checkLogin = async () => {
-  //     try {
-  //       const auth = await AsyncStorage.getItem(AUTH_ASYNC_STORAGE_KEY);
-  //       const me = await AsyncStorage.getItem(ME_ASYNC_STORAGE_KEY);
+  //check auth
+  useEffect(() => {
+    const checkLogin = async () => {
+      try {
+        const auth = await AsyncStorage.getItem(AUTH_ASYNC_STORAGE_KEY);
+        const me = await AsyncStorage.getItem(ME_ASYNC_STORAGE_KEY);
 
-  //       if (auth) {
-  //         const parsedAuth = JSON.parse(auth);
-  //         setAuthorizationToken(parsedAuth.accessToken);
-  //         dispatch(setAuth(parsedAuth));
-  //       }
-  //       if (me) {                    
-  //         const parsedMe = JSON.parse(me);
+        if (auth) {
+          const parsedAuth = JSON.parse(auth);
+          setAuthorizationToken(parsedAuth.accessToken);
+          dispatch(setAuth(parsedAuth));
+        }
+        if (me) {                    
+          const parsedMe = JSON.parse(me);
           
-  //         dispatch(setMe(parsedMe));
-  //         storage.set(keyMMKVStore.USER_ID, parsedMe.id)
+          dispatch(setMe(parsedMe));
+          storage.set(keyMMKVStore.USER_ID, parsedMe.id)
           
-  //       } else if (accessToken && !meData) {
-  //         const meData = await userApi.getCurrentUser();
-  //         dispatch(setMe(meData));
-  //         await AsyncStorage.setItem(ME_ASYNC_STORAGE_KEY, JSON.stringify(meData));
-  //       }
-  //     } catch (error) {
-  //       console.error('Error in checkLogin:', error);
-  //     }
-  //   };
+        } else if (accessToken && !meData) {
+          const meData = await userApi.getCurrentUser();
+          dispatch(setMe(meData));
+          await AsyncStorage.setItem(ME_ASYNC_STORAGE_KEY, JSON.stringify(meData));
+        }
+      } catch (error) {
+        console.error('Error in checkLogin:', error);
+      }
+    };
 
-  //   checkLogin().catch(error => console.error('checkLogin failed:', error));
-  // }, [accessToken, meData?.id, dispatch]);
+    checkLogin().catch(error => console.error('checkLogin failed:', error));
+  }, [accessToken, meData?.id, dispatch]);
 
-  // if ( accessToken && meData) {
-  //   startBackgroundSocketTask('notifications',accessToken, meData?.id, )
-  // }
-  //   const checkNetwork = async () => {
-  //     try {
-  //       const state = await NetInfo.fetch();
-  //       const isWifiConnected = state.type === 'wifi';
-  //       dispatch(setNetworkState(isWifiConnected));
-  //       console.log('Initial Wi-Fi state:', isWifiConnected);
-  //     } catch (error) {
-  //       console.error('Error checking network:', error);
-  //       dispatch(setNetworkState(false)); 
-  //     }
-  //   };
+  if ( accessToken && meData) {
+    startBackgroundSocketTask('notifications',accessToken, meData?.id, )
+  }
+    const checkNetwork = async () => {
+      try {
+        const state = await NetInfo.fetch();
+        const isWifiConnected = state.type === 'wifi';
+        dispatch(setNetworkState(isWifiConnected));
+        console.log('Initial Wi-Fi state:', isWifiConnected);
+      } catch (error) {
+        console.error('Error checking network:', error);
+        dispatch(setNetworkState(false)); 
+      }
+    };
+  
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer>
-          {/* <AppRouters authData={accessToken} /> */}
-          {/* <ChatScreen/> */}
-          <ZaloBottomSheet/>
+          <AppRouters authData={accessToken} />
       </NavigationContainer>
     </GestureHandlerRootView>
   );

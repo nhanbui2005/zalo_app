@@ -17,9 +17,9 @@ import {colors} from '~/styles/Ui/colors';
 import {Assets} from '~/styles/Ui/assets';
 import AppButton from '~/components/Ui/Button';
 import AppBar from '~/components/Common/AppBar';
-import {relationApi} from '~/features/relation/relationService';
 import SimpleModal from '~/components/Common/modal/SimpleModal';
 import { textStyle } from '~/styles/Ui/text';
+import { relationApi } from '~/features/relation/relationApi';
 
 const SendAddFriendScreen = () => {
 

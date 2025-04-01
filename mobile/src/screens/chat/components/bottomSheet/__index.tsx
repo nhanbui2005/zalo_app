@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Animated,
   Keyboard,
+  Text,
 } from 'react-native';
 import {Assets} from '~/styles/Ui/assets';
 import {colors} from '~/styles/Ui/colors';
@@ -23,16 +24,22 @@ import {appSelector} from '~/features/app/appSlice';
 import {MessageContentType} from '~/features/message/dto/message.enum';
 import MemberRepository from '~/database/repositories/MemberRepository';
 import { MMKVStore } from '~/utils/storage';
+import BottomSheet from '@gorhom/bottom-sheet';
+import MenuList from './Menulist';
+import UserRepository from '~/database/repositories/UserRepository';
 
 interface BottomSheetProps {
   roomId: string;
   onTextChange: (text: string) => void;
   onEmojiChange: (text: string) => void;
 }
+type ActiveComponent = 'keyboard' | 'emojis' | 'menu' | 'mic' | 'image' | null;
 
 const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
   ({roomId, onTextChange, onEmojiChange}) => {
     const inputRef = useRef<TextInput>(null);
+    const bottomSheetRef = useRef<BottomSheet>(null);
+
     const currentMemberMyId = MMKVStore.getCurrentMemberMeId();
     const currentRoomId = MMKVStore.getCurrentRoomId();
     const {emit} = useSocket();
@@ -40,13 +47,15 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
     const {curentMessageRepling} = useChatStore();
     const [text, setText] = useState('');
     const [keyboard, setKeyboard] = useState(false);
-    const [renderEmojis, setRenderEmojis] = useState(false);
+    const [activeComponent, setActiveComponent] = useState<ActiveComponent>(null);
     const [isWriting, setIsWriting] = useState(false);
 
     const scaleIcons = useRef(new Animated.Value(1)).current;
     const scaleSend = useRef(new Animated.Value(0)).current;
     const roomRepo = RoomRepository.getInstance()
     const messageRepo = MessageRepository.getInstance()
+    const userRepo = UserRepository.getInstance()
+
     useEffect(() => {
       if (!currentMemberMyId && meData) {
         const getMemberId = async () => {
@@ -67,8 +76,6 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
       }
     }, []); 
     
-  
-
     //listen to emit writing
     useEffect(() => {
       if (text && !isWriting) {
@@ -95,7 +102,7 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
     useEffect(() => {
       const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
         setKeyboard(true);
-        setRenderEmojis(false);
+        setActiveComponent(null)
       });
 
       const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
@@ -108,14 +115,29 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
       };
     }, []);
 
-    const handleIconPress = useCallback(() => {
-      if (!keyboard) {
-        setRenderEmojis(prev => !prev);
-      } else {
+    const handleIconPress = useCallback((icon : ActiveComponent) => {
+      if (activeComponent == icon) {
+        setActiveComponent(null)
+      }else {
+        setActiveComponent(icon)
         Keyboard.dismiss();
-        setRenderEmojis(true);
       }
     }, [keyboard]);
+
+    const renderComponent = () => {      
+      switch (activeComponent) {
+        case 'emojis':
+          return <EmojiList onEmojisTextChange={handleEmojiChange} />;
+        case 'menu':
+          return <MenuList/>;
+        case 'mic':
+          return <View style={{flex: 1, borderBlockColor: 'red'}}><Text>Mic Panel</Text></View>;
+        case 'image':
+          return <View style={{flex: 1, borderBlockColor: 'black'}}><Text>Image Panel</Text></View>;
+        default:
+          return null;
+      }
+    };
 
     const handleAnimation = useCallback((text: string) => {
       Animated.parallel([
@@ -151,19 +173,17 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
           contentType: MessageContentType.TEXT,
           replyMessageId: curentMessageRepling?.id,
         } as _MessageSentReq;
-console.log(dto);
 
         setText('');
 
-        await MessageService.SentMessageText(dto, currentMemberMyId , roomRepo, messageRepo);
-         
+        await MessageService.SentMessageText(dto, currentMemberMyId , roomRepo, messageRepo, userRepo);
       }
     };
 
     return (
       <View>
         <View style={styles.bottomBar}>
-          <TouchableOpacity style={styles.iconButton} onPress={handleIconPress}>
+          <TouchableOpacity style={styles.iconButton} onPress={()=>handleIconPress('emojis')}>
             <Image source={Assets.icons.ghost_gray} style={iconSize.large} />
           </TouchableOpacity>
 
@@ -185,16 +205,16 @@ console.log(dto);
                 styles.btns,
                 {transform: [{scale: scaleIcons}], opacity: scaleIcons},
               ]}>
-              <TouchableOpacity style={styles.iconButton}>
+              <TouchableOpacity onPress={()=>handleIconPress('menu')} style={styles.iconButton}>
                 <Image
                   source={Assets.icons.menu_row_gray}
                   style={iconSize.large}
                 />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
+              <TouchableOpacity onPress={()=>handleIconPress('mic')} style={styles.iconButton}>
                 <Image source={Assets.icons.mic_gray} style={iconSize.large} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.iconButton}>
+              <TouchableOpacity onPress={()=>handleIconPress('image')} style={styles.iconButton}>
                 <Image
                   source={Assets.icons.image_gray}
                   style={iconSize.large}
@@ -216,11 +236,12 @@ console.log(dto);
           </View>
         </View>
 
-        {renderEmojis && !keyboard && (
+        {activeComponent && !keyboard && (
           <View style={{height: 294}}>
-            <EmojiList onEmojisTextChange={handleEmojiChange} />
+            {renderComponent()}
           </View>
         )}
+
       </View>
     );
   },

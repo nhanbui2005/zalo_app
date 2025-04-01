@@ -237,6 +237,8 @@ export default class MessageRepository {
     roomRepository: RoomRepository
   ): Promise<void> {
     try {
+      console.log('serverMessage', serverMessage);
+      
       await database.write(async () => {
         // Tìm tin nhắn local có tempId
         const localMessages = await messageRepository.messagesCollection
@@ -253,8 +255,7 @@ export default class MessageRepository {
             message.senderId = serverMessage.senderId,
             message.status = serverMessage.status || MessageViewStatus.SENT,
             message.replyMessageId = serverMessage.replyMessageId
-          });          
-          
+          });                    
         } else {          
           // Nếu không tìm thấy tin nhắn, thêm mới
           const messagePrepare = await this.prepareMessages([
@@ -278,9 +279,7 @@ export default class MessageRepository {
     options: PageOptionsDto = {},
     messageRepository: MessageRepository,
   ): Promise<CursorPaginatedRes<MessageItemView>> {
-    try {
-      console.log('111111111111111111111');
-      
+    try {      
       const { limit = 20, afterCursor, beforeCursor } = options;
       console.log('beforeCursor', beforeCursor);
       

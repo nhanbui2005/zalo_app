@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
 import { UModalRef } from '~/components/Common/modal/UModal';
 import { useMessageListWithInfiniteScroll } from '~/hooks/Ui/useMessageListWithInfiniteScroll';

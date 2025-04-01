@@ -10,7 +10,7 @@ import { useSelector } from 'react-redux';
 import { authSelector } from '~/features/auth/authSlice';
 import { _MessageSentRes } from '~/features/message/dto/message.dto.parent';
 import { useRoomStore } from '~/stores/zustand/room.store';
-import { keyMMKVStore, storage } from '~/utils/storage';
+import { keyMMKVStore, MMKVStore, storage } from '~/utils/storage';
 
 interface SocketContextType {
   emit: (event: string, data: any) => void;
@@ -22,12 +22,6 @@ interface SocketContextType {
 interface SocketProviderProps {
   namespace: string;
   children: ReactNode;
-}
-
-export interface FriendStatusSocket {
-  userId: string;
-  isOnline: boolean;
-  lastOnline: Date;
 }
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -45,7 +39,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({
   children,
 }) => {
   const { accessToken } = useSelector(authSelector);
-  const {currentRoomId} = useRoomStore()
+  const currentRoomId = MMKVStore.getCurrentRoomId()
   const myId = storage.getString(keyMMKVStore.USER_ID)
   const [isConnected, setIsConnected] = useState(false);
 

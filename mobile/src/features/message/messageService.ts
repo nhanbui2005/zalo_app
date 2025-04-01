@@ -9,6 +9,7 @@ import {MessageApi} from './messageApi';
 import MessageRepository from '~/database/repositories/MessageRepository';
 import RoomRepository from '~/database/repositories/RoomRepository';
 import { nanoid } from 'nanoid/non-secure';
+import UserRepository from '~/database/repositories/UserRepository';
 
 const loadMoreMessage = async (
   dto: CursorPaginatedReq<string>,
@@ -34,6 +35,7 @@ const SentMessageText = async (
   memberMyId: string,
   roomRepository: RoomRepository,
   messageRepository: MessageRepository,
+  userRepository: UserRepository
 ): Promise<void> => {
   try {    
     // 1. Tạo tin nhắn giả và lưu cục bộ
@@ -59,8 +61,7 @@ const SentMessageText = async (
 
     if (true) {
       // 3. Gửi tin nhắn lên server
-      const messageRes = await MessageApi.SentMessage(dto);      
-
+      const messageRes = await MessageApi.SentMessage(dto);            
       // 4. Cập nhật tin nhắn với dữ liệu từ server
       await messageRepository.updateSentMessage(
         tempId,
@@ -68,8 +69,6 @@ const SentMessageText = async (
         messageRepository,
         roomRepository,
       );
-
-     
     } 
   } catch (error: any) {
     throw error;
