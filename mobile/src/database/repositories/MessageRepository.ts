@@ -13,12 +13,14 @@ import { CursorPaginatedRes, PageOptionsDto } from '~/features/common/pagination
 import { nanoid } from 'nanoid';
 import EmojiModel from '../models/EmojiModel';
 import { UserItemBaseView } from '../types/user.typee';
+import MediaModel from '../models/MediaModel';
 
 export default class MessageRepository {
   private static instance: MessageRepository; 
 
   private messagesCollection = database.get<MessageModel>('messages');  
   private emojisCollection = database.get<EmojiModel>('emojis');
+  private mediaCollection = database.get<MediaModel>('medias');
 
   private constructor() {} // Chặn việc tạo instance từ bên ngoài
 
@@ -58,7 +60,7 @@ export default class MessageRepository {
     userMap: Map<string, UserItemBaseView>,
     afterCursor?: number,
     beforCursor?: number
-  ): Observable<MessageItemView[]> {
+  ): Observable<MessageItemView[]> {    
     return new Observable(observer => {
       let query = this.messagesCollection
         .query(Q.where('room_id', roomId), Q.sortBy('created_at', Q.desc));
@@ -72,9 +74,8 @@ export default class MessageRepository {
       
       const observableQuery = query.observe();
   
-      const subscription = observableQuery.subscribe(async messages => {
-        
-        const messageIds = messages.map(msg => msg.id);
+      const subscription = observableQuery.subscribe(async messages => {    
+        const messageIds = messages.map(msg => msg._id);
   
         // Lấy danh sách emoji liên quan đến các tin nhắn
         const emojis = await this.emojisCollection
@@ -89,6 +90,20 @@ export default class MessageRepository {
           }
           emojiMap[emoji.messageId].push(emoji.content);
         });
+
+        // Lấy danh sách media liên quan đến các tin nhắn có mediaId
+        const mediaMessages = messages.filter(msg => !!msg.mediaId);
+        let mediaMap: { [key: string]: MediaModel } = {};
+
+        if (mediaMessages.length > 0) {
+          const mediaRecords = await this.mediaCollection
+            .query(Q.where('msg_id', Q.oneOf(mediaMessages.map(msg => msg.id))))
+            .fetch();
+
+          mediaRecords.forEach(media => {
+            mediaMap[media.msgId] = media;
+          });
+        }
 
         // Map tin nhắn thành MessageItemView[]
         const mappedMessages: MessageItemView[] = messages.map(msg => {
@@ -106,20 +121,23 @@ export default class MessageRepository {
             updatedAt: new Date(msg.updatedAt),
             emojis: emojiMap[msg.id] || [],
             sender: msg.senderId ? userMap.get(msg.senderId) : { id: '', username: 'Unknown', avatarUrl: '', preferredName: '' },
+            media: mediaMap[msg.id] || null, 
           };
           return mappedMessage;
         });
         
+        
         observer.next(mappedMessages);
       });
-  
+
       return () => subscription.unsubscribe();
     });
   }
   
   // Hàm chuẩn bị tin nhắn để tạo
   async prepareMessages(
-    pendingMessages: { roomId: string; messages: Partial<_MessageSentRes>[] }[]
+    pendingMessages: { roomId: string; messages: Partial<_MessageSentRes>[] }[],
+    mediaId ?: string
   ): Promise<MessageModel[]> {
     const messagesCollection = database.get<MessageModel>('messages');
     const preparedMessages: MessageModel[] = [];
@@ -236,43 +254,27 @@ export default class MessageRepository {
     messageRepository: MessageRepository,
     roomRepository: RoomRepository
   ): Promise<void> {
-    try {
-      console.log('serverMessage', serverMessage);
-      
+    try {      
+      const localMessages = await messageRepository.messagesCollection
+      .query(Q.where('_id', tempId))
+      .fetch();
       await database.write(async () => {
-        // Tìm tin nhắn local có tempId
-        const localMessages = await messageRepository.messagesCollection
-          .query(Q.where('_id', tempId))
-          .fetch();
-
-  
         if (localMessages.length > 0) {
-          
-          // Cập nhật tin nhắn thay vì xoá
           await localMessages[0].update(message => {
             message._id = serverMessage.id; 
-            message.updatedAt = Number(serverMessage.updatedAt);
             message.senderId = serverMessage.senderId,
             message.status = serverMessage.status || MessageViewStatus.SENT,
             message.replyMessageId = serverMessage.replyMessageId
-          });                    
-        } else {          
-          // Nếu không tìm thấy tin nhắn, thêm mới
-          const messagePrepare = await this.prepareMessages([
-            { roomId: serverMessage.roomId, messages: [serverMessage] },
-          ]);
-
-          await messageRepository.batchMessages(messagePrepare, false);
+            message.updatedAt = Number(new Date(serverMessage.updatedAt));
+            message.createdAt = Number(new Date(serverMessage.createdAt))
+          });              
         }
-  
-      });
-  
+      })      
     } catch (error) {
       console.error(`❌ Failed to update sent message ${tempId}:`, error);
       throw error;
     }
   }
-  
 
   async getMessages(
     roomId: string,
@@ -339,6 +341,4 @@ export default class MessageRepository {
       throw error;
     }
   }
-  
-
 }

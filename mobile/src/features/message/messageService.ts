@@ -9,6 +9,7 @@ import {MessageApi} from './messageApi';
 import MessageRepository from '~/database/repositories/MessageRepository';
 import RoomRepository from '~/database/repositories/RoomRepository';
 import { nanoid } from 'nanoid/non-secure';
+import { MessageViewStatus } from './dto/message.enum';
 
 export interface BaseMediaInfor {
   name: string;
@@ -49,6 +50,7 @@ const SentMessageText = async (
       type: dto.contentType,
       senderId: memberMyId.trim(),
       isSelfSent: true,
+      status: MessageViewStatus.SENDING,
       replyMessageId: dto.replyMessageId,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -63,7 +65,8 @@ const SentMessageText = async (
 
     if (true) {
       // 3. Gửi tin nhắn lên server
-      const messageRes = await MessageApi.SentTextMessage(dto);            
+      const messageRes = await MessageApi.SentTextMessage(dto);         
+         
       // 4. Cập nhật tin nhắn với dữ liệu từ server
       await messageRepository.updateSentMessage(
         tempId,

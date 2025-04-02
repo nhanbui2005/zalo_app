@@ -108,7 +108,6 @@ export async function syncNewMessage(
   roomRepository: RoomRepository,
   messageRepository: MessageRepository,
 ): Promise<void> {
-console.log('new', newMessage);
 
   if (!newMessage) return;
   const roomId = newMessage.roomId || `temp-${nanoid}`;
@@ -131,6 +130,7 @@ console.log('new', newMessage);
       console.warn('Không có tin nhắn để đồng bộ.');
       return;
     }
+    
     await database.write(async () => {
       await messageRepository.batchMessages(messagesPrepare, false);
       await roomRepository.updateRoomLastMessage(roomId, messagesPrepare[0], unReadMessages, false);

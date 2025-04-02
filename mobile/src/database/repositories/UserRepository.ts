@@ -51,7 +51,7 @@ export default class UserRepository {
         user.bio = userData.bio || '';
         user.gender = userData.gender || '';
         user.email = userData.email || '';
-        user.dob = Number(userData.dob) || Date.now();
+        user.dob = Number(new Date(userData.dob)) || Date.now();
         user.avatarUrl = userData.avatarUrl || '';
         user.coverUrl = userData.coverUrl || '';
         user.isOnline = false;
@@ -125,7 +125,7 @@ export default class UserRepository {
           userRecord.bio = userData.bio || existingUser.bio;
           userRecord.gender = userData.gender || existingUser.gender;
           userRecord.email = userData.email || existingUser.email;
-          userRecord.dob = Number(userData.dob) || existingUser.dob;
+          userRecord.dob = Number(new Date(userData.dob)) || existingUser.dob;
           userRecord.avatarUrl = userData.avatarUrl || existingUser.avatarUrl;
           userRecord.coverUrl = userData.coverUrl || existingUser.coverUrl || '';
           userRecord.relationStatus = relationStatus; // Sử dụng relationStatus từ item
@@ -138,7 +138,7 @@ export default class UserRepository {
           user.bio = userData.bio || '';
           user.gender = userData.gender || '';
           user.email = userData.email || '';
-          user.dob = Number(userData.dob) || Date.now();
+          user.dob = Number(new Date(userData.dob)) || Date.now();
           user.avatarUrl = userData.avatarUrl || '';
           user.coverUrl = userData.coverUrl || '';
           user.relationStatus = relationStatus; 

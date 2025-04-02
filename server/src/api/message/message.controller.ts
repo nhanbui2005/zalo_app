@@ -60,7 +60,6 @@ export class MessageController {
     @Body() dto: SendMessageReqDto,
     @CurrentUser('id') id: Uuid
   ) {
-
     return this.messageService.sendMessageUnified(roomId, dto, id);
   }
   @Get('/detail')

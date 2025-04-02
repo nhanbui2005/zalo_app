@@ -57,8 +57,7 @@ export class MessageService {
     senderId: Uuid,
     file?: Express.Multer.File,
   ): Promise<MessageResDto> {
-    const { receiverId, content, contentType, replyMessageId } = dto;
-  
+    const { receiverId, content, contentType, replyMessageId } = dto;  
     // Tìm phòng chat
     let room = await this.chatRoomRepository.findOne({
       where: { id: roomId },
@@ -110,6 +109,8 @@ export class MessageService {
       content: contentType === MessageContentType.TEXT ? content : fileUrl,
       type: contentType,
       replyMessageId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
       createdBy: senderId,
       updatedBy: senderId,
     });

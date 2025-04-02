@@ -4,6 +4,7 @@ import { MessageContentType, MessageViewStatus } from '~/features/message/dto/me
 import RoomModel from './RoomModel';
 import MemberModel from './MemberModel';
 import EmojiModel from './EmojiModel';
+import MediaModel from './MediaModel';
 
 export default class MessageModel extends Model {
   static table = 'messages';
@@ -19,6 +20,7 @@ export default class MessageModel extends Model {
   @text('sender_id') senderId?: string;
   @text('room_id') roomId!: string;
   @text('reply_message_id') replyMessageId?: string;
+  @text('media_id') mediaId?: string;
 
   // Quan hệ với ChatRoom
   @immutableRelation('chat_rooms', 'room_id') room!: RoomModel;
@@ -28,6 +30,9 @@ export default class MessageModel extends Model {
 
   // Tin nhắn được reply (dùng query để lấy danh sách replies)
   @immutableRelation('messages', 'reply_message_id') replyMessage?: MessageModel;
+
+  // Quan hệ với Media 
+  @immutableRelation('media', 'media_id') media?: MediaModel;
 
   // Quan hệ với EmojiModel (danh sách emoji của tin nhắn)
   @children('emojis') emojis!: Query<EmojiModel>;

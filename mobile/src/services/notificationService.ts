@@ -69,7 +69,7 @@ export async function setupNotificationChannel() {
 }
 
 // 🟢 Gửi thông báo tin nhắn mới
-export async function sendLocalNotification(roomId: string, roomName: string, roomAvatar: string, message: string) {  
+export async function sendLocalNotification(roomId: string, roomName: string, roomAvatar: string, message: string) {    
   await notifee.displayNotification({
     data: { roomId },
     android: {

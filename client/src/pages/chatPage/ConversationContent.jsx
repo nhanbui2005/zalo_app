@@ -272,6 +272,8 @@ const Input = ({ roomId }) => {
       sendTextMsg({
         roomId,
         data: {
+          roomId,
+          contentType: 'text',
           content: textContent,
           ...(msgReply && { replyMessageId: msgReply.replyMessageId }),
         },

@@ -53,7 +53,7 @@ export const getRoomByPartnerId = createAsyncThunk(
 export const sendTextMsg = createAsyncThunk(
   'rooms/send-text-msg',
   async ( {roomId, data}, {rejectWithValue}) => {    
-    try {
+    try {      
       const q = `${messageUrl}/${roomId}/text`
       return await AxiosInstant.post(q,data)
     } catch (error) {

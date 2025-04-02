@@ -1,5 +1,5 @@
 import { database } from '~/database';
-import { Collection, Database, Q } from '@nozbe/watermelondb';
+import { Q } from '@nozbe/watermelondb';
 import { Room } from '~/features/room/dto/room.dto.nested';
 import { RoomItemView } from '~/database/types/room.type';
 import RoomModel from '../models/RoomModel';
@@ -97,7 +97,7 @@ export default class RoomRepository {
         r.lastMessageRevoked = lastMessage.revoked ?? false;
         r.lastMessageSenderName = lastMessage.sender?.user?.username || 'unknown';
         r.unreadCount += messageCounts;
-        r.lastMessageCreatedAt = Number(lastMessage.createdAt) || Number(new Date());
+        r.lastMessageCreatedAt = Number(new Date(lastMessage.createdAt)) || Number(new Date());
       });      
       console.log(`Cập nhật tin nhắn cuối của phòng ${roomId} thành công.`);
     };
@@ -108,9 +108,7 @@ export default class RoomRepository {
       await updateFn();
     }
   }
-  async resetRoomUnreadCount(roomId: string): Promise<void> {
-    console.log(roomId, 'mmmmmmmm');
-    
+  async resetRoomUnreadCount(roomId: string): Promise<void> {    
     await database.write(async () => {
       const rooms = await this.roomsCollection.query(Q.where('_id', roomId)).fetch();
       if (rooms.length === 0) {
@@ -122,8 +120,6 @@ export default class RoomRepository {
       await room.update(r => {
         r.unreadCount = 0;
       });
-  
-      console.log(`Đã reset unreadCount của phòng ${roomId} về 0`);
     });
   }
   async prepareRooms(rooms: Room[]): Promise<RoomModel[]> {

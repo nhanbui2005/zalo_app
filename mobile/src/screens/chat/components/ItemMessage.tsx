@@ -40,6 +40,7 @@ type Props = {
 // Object ánh xạ trạng thái tin nhắn
 const StatusString: any = {
   [MessageViewStatus.SENT]: 'Đã gửi',
+  [MessageViewStatus.SENDING]: 'Đang gủi',
   [MessageViewStatus.RECEIVED]: 'Đã nhận',
   [MessageViewStatus.VIEWED]: 'Đã xem',
 };

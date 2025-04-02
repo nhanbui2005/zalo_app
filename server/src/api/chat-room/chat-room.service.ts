@@ -235,7 +235,7 @@ export class ChatRoomService {
       .getOne()
 
 
-    const isGroup = room.type == RoomType.GROUP
+    const isGroup = room.type && room.type == RoomType.GROUP 
     const memberMe = room.members.filter(m => m.user.id == meId)[0]
     const memberPartner = room.members.filter(m => m.user.id != meId)[0]
     const roomAvatar = isGroup 

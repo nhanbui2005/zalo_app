@@ -14,6 +14,12 @@ export enum MessageViewStatus {
   REVOKED = 'revoked',
 }
 
+export enum CallStatus {
+  CALLING = 'calling', //dùng cho nhóm
+  CALLING_ACCEPT = 'calling_accept',
+  CALLING_REJECT = 'calling_reject',
+}
+
 export enum MessageSource {
   SYSTEM = 'system',
   PEOBLE = 'peoble',

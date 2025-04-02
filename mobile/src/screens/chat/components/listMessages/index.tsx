@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
 import { UModalRef } from '~/components/Common/modal/UModal';
 import { useMessageListWithInfiniteScroll } from '~/hooks/Ui/useMessageListWithInfiniteScroll';
@@ -8,13 +8,14 @@ import { _MessageSentRes } from '~/features/message/dto/message.dto.parent';
 import ModalContent_MenuMessage, { KeyItemMenu } from '~/components/Common/modal/content/ModelContent_MenuMessage';
 import { useChatStore } from '~/stores/zustand/chat.store';
 
+
 const MessageListView = () => {
   const { curentMessageRepling, setCurentMessageRepling } = useChatStore();
   const modalRef = useRef<UModalRef>(null);
   const currenMessageReplyingRef = useRef<any>(curentMessageRepling);
   const replyingRef = useRef<ReplyMessageRef>(null);
   const messageSelectedRef = useRef<_MessageSentRes>();
-  const { messages, isLoading, loadMoreMessages, hasMore } = useMessageListWithInfiniteScroll();
+  const { messages, isLoading, loadMoreMessages, hasMore } = useMessageListWithInfiniteScroll();  
 
   const handleLongItemPress = (pageY: number, message: any) => {
     messageSelectedRef.current = message;

@@ -24,3 +24,4 @@ export interface MessageItemDisplay extends MessageItemView {
     isDisplayStatus?: boolean;
     source: MessageSource;
   }
+

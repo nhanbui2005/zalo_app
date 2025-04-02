@@ -10,6 +10,7 @@ export interface messageEntity {
     type: MessageContentType;
     replyMessageId?: string;
     status?: MessageViewStatus;
+    createdAt: Date
 };
 
 
