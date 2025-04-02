@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
+import { MessageService } from '~/features/message/messageService';
 
 const menuItems = [
   { id: '1', title: 'Vị trí', icon: '📍' },
@@ -28,35 +29,26 @@ const MenuList = () => {
       case 'Nhắc hẹn':
         setReminder();
         break;
-      default:
-        Alert.alert('Chức năng', `Bạn đã chọn: ${item.title}`);
     }
   };
 
   const openDocument = async () => {
     try {
       const result = await DocumentPicker.pick({
-        type: [DocumentPicker.types.allFiles], // Chọn tất cả loại file
+        type: [DocumentPicker.types.allFiles], 
       });
-
-      console.log('File đã chọn:', result);
-      Alert.alert('Tệp đã chọn', result[0]?.name ?? 'Không có tệp nào');
+      const res = MessageService.loadMoreMessage
+      
     } catch (err) {
-      if (DocumentPicker.isCancel(err)) {
-        console.log('Người dùng đã hủy chọn tệp');
-      } else {
-        console.error('Lỗi khi chọn tệp:', err);
-      }
+      console.log('lỗi pick file : ', err);
     }
   };
 
 
   const showLocation = () => {
-    Alert.alert('Chia sẻ vị trí', 'Chức năng chia sẻ vị trí đang được phát triển.');
   };
 
   const setReminder = () => {
-    Alert.alert('Nhắc hẹn', 'Chức năng nhắc hẹn đang được phát triển.');
   };
 
   return (

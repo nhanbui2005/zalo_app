@@ -8,7 +8,6 @@ import { CursorPaginatedDto } from '@/common/dto/cursor-pagination/paginated.dto
 import { LoadMoreMessagesReqDto } from './dto/load-more-messages.req.dto';
 import { MessageResDto } from './dto/message.res.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { SendTextMsgReqDto } from './dto/send-text-msg.req.dto';
 import { LoadMessagesFromReqDto } from './dto/load-messages-from.req.dto';
 import { DetailMessageReqDto } from './dto/get-detail-message-req.dto';
 import { RedisService } from '@/redis/redis.service'
@@ -33,7 +32,7 @@ export class MessageController {
     return { message: 'FCM token saved' };
   }
 
-  @Post()
+  @Post(':roomId/media')
   @UseInterceptors(
     FileInterceptor('file',{
       limits: { fileSize: 500 * 1024 },
@@ -47,21 +46,22 @@ export class MessageController {
     })
   )
   sendMessage(
+    @Param('roomId') roomId: Uuid,
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: SendMessageReqDto,
     @CurrentUser('id') id: Uuid
   ) {
-    return this.messageService.sendMessage(dto, file, id);
+    return this.messageService.sendMessageUnified(roomId, dto, id, file);
   }
 
   @Post(':roomId/text')
   sendTextMsg(
     @Param('roomId') roomId: Uuid,
-    @Body() dto: SendTextMsgReqDto,
+    @Body() dto: SendMessageReqDto,
     @CurrentUser('id') id: Uuid
   ) {
 
-    return this.messageService.sendTextMsg(roomId, dto, id);
+    return this.messageService.sendMessageUnified(roomId, dto, id);
   }
   @Get('/detail')
   findDetail(

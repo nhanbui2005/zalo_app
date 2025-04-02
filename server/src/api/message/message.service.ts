@@ -25,10 +25,6 @@ import { LoadMoreMessagesReqDto } from './dto/load-more-messages.req.dto';
 import { MessageResDto } from './dto/message.res.dto';
 import { SortEnum } from '@/constants/sort.enum';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { CloudinaryResponse } from 'src/cloudinary/cloudinary/cloudinary-response';
-import { createCacheKey } from '@/utils/cache.util';
-import { CacheKey } from '@/constants/cache.constant';
-import { SendTextMsgReqDto } from './dto/send-text-msg.req.dto';
 import { LoadMessagesFromReqDto } from './dto/load-messages-from.req.dto';
 import { RedisService } from '@/redis/redis.service';
 import { RelationService } from '../relationship/relation.service';
@@ -55,154 +51,96 @@ export class MessageService {
     private cloundService: CloudinaryService,
   ) {}
 
-  async sendMessage(
+  async sendMessageUnified(
+    roomId: Uuid,
     dto: SendMessageReqDto,
-    file: Express.Multer.File,
     senderId: Uuid,
+    file?: Express.Multer.File,
   ): Promise<MessageResDto> {
-    const { roomId, receiverId, content, contentType } = dto;
-
-    let room = null;
-    let resultFile: CloudinaryResponse = null;
-    let memberSent: MemberEntity;
-
-    if (contentType != MessageContentType.TEXT) {
-      resultFile = await this.cloundService.uploadFile(file);
-    }
-
-    if (roomId) {
-      room = await this.chatRoomRepository
-        .createQueryBuilder('chatRoom')
-        .select(['chatRoom.id'])
-        .leftJoin('chatRoom.members', 'members')
-        .addSelect(['members.id', 'members.userId'])
-        .where('chatRoom.id = :roomId', { roomId })
-        .getOne();
-    }
-
-    if (!room) {
-      // Nếu không tồn tại room, tạo mới
-      room = await this.createChatRoom(senderId, receiverId);
-      await this.chatRoomRepository.save(room);
-    }
-
-    if (!memberSent) {
-      memberSent = await this.memberRepository
-        .createQueryBuilder('member')
-        .leftJoinAndSelect('member.user', 'user')
-        .select(['member.id', 'user.id', 'user.username', 'user.avatarUrl'])
-        .where('member.roomId = :roomId', { roomId: room.id })
-        .andWhere('member.userId = :userId', { userId: senderId })
-        .getOne();
-    }
-
-    if (!memberSent) {
-      throw new Error('Member sender not found');
-    }
-
-    const newMessage = new MessageEntity({
-      senderId: memberSent.id,
-      sender: memberSent,
-      roomId: room.id,
-      content:
-        contentType == MessageContentType.TEXT
-          ? content
-          : resultFile.secure_url,
-      type: contentType,
-      replyMessageId: dto.replyMessageId,
-      createdBy: senderId,
-      updatedBy: senderId,
-    });
-
-    await this.messageRepository.save(newMessage);
-
-    //lọc danh sách member online và offline
-    const members = room.members.filter((member) => member.userId != senderId);
-    const userClientKeys = members.map((m) =>
-      createCacheKey(CacheKey.USER_CLIENT, m.userId),
-    );
-    const userCacheIds = await this.redisService.mget(...userClientKeys);    
-    
-    let onlineMembers = [];
-    let offineMembers = [];
-    userCacheIds.forEach((id, index) => {
-      if (id) {
-        onlineMembers.push(members[index]);
-      } else {
-        offineMembers.push(members[index]);
-      }
-    });
-
-    const result = {
-      ...newMessage,
-      receivedMembers: onlineMembers.map((m) => m.id),
-    };
-
-    // Gửi thông báo sự kiện
-    // this.eventEmitter.emit(EventEmitterKey.NEW_MESSAGE, {
-    //   id:newMessage.id,
-    //   content: contentType == MessageContentType.TEXT ? content : resultFile.secure_url,
-    //   type: contentType,
-    //   roomId: room.id,
-    //   memberSentId: memberSent.id,
-    //   sender: memberSent,
-    //   createdAt: newMessage.createdAt,
-    //   members: room.members.filter(member => member.userId != senderId),
-    // });
-
-    return plainToInstance(MessageResDto, result);
-  }
-
-  async sendTextMsg(roomId: Uuid, data: SendTextMsgReqDto, meId: Uuid) {
-    // check if the room exists
-    //Kiểm tra phòng có tồn tại ko    
-    const room = await this.chatRoomRepository.findOneOrFail({
+    const { receiverId, content, contentType, replyMessageId } = dto;
+  
+    // Tìm phòng chat
+    let room = await this.chatRoomRepository.findOne({
       where: { id: roomId },
       select: ['id', 'members'],
       relations: ['members'],
     });
-
-    // check if the user is a member of the room
-    const member = await this.memberRepository.findOneOrFail({
-      where: {
-        roomId: roomId,
-        userId: meId,
-      },
+  
+    // Nếu không tìm thấy phòng, tạo phòng mới
+    if (!room) {
+      room = await this.createChatRoom(senderId, receiverId);
+      await this.chatRoomRepository.save(room);
+    }
+  
+    // Tìm thành viên gửi tin nhắn trong phòng chat
+    const memberSent = await this.memberRepository.findOne({
+      where: { roomId: room.id, userId: senderId },
       select: ['id', 'userId'],
     });
-    const newMessageData = new MessageEntity({
-      content: data.content,
-      sender: member,
-      roomId,
-      type: MessageContentType.TEXT,
-      createdAt: new Date(),
-      createdBy: meId,
-      updatedBy: meId,
+  
+    if (!memberSent) throw new Error('Member sender not found');
+  
+    let fileUrl = null;
+    let fileInfo = null;
+  
+    // Nếu có file và contentType không phải là văn bản
+    if (contentType !== MessageContentType.TEXT && file) {
+      // Upload file lên Cloudinary
+      const resultFile = await this.cloundService.uploadFile(file);
+      fileUrl = resultFile.secure_url;
+  
+      // Thông tin chi tiết về file (nếu là video hoặc hình ảnh)
+      fileInfo = {
+        url: resultFile.secure_url,
+        public_id: resultFile.public_id,
+        format: resultFile.format,
+        bytes: resultFile.bytes,
+        width: resultFile.width || null,
+        height: resultFile.height || null,
+        duration: resultFile.duration || null, // Nếu là video
+        preview_url: resultFile.resource_type === 'video' ? resultFile.preview_url : null, // Thumbnail của video
+      };
+    }
+  
+    // Tạo đối tượng tin nhắn mới
+    const newMessage = new MessageEntity({
+      senderId: memberSent.id,
+      sender: memberSent,
+      roomId: room.id,
+      content: contentType === MessageContentType.TEXT ? content : fileUrl,
+      type: contentType,
+      replyMessageId,
+      createdBy: senderId,
+      updatedBy: senderId,
     });
-    if (data?.replyMessageId)
-      newMessageData.replyMessageId = data.replyMessageId;
-
-    const newMessage = await this.messageRepository.save(newMessageData);
-    const newMsg = await this.messageRepository.findOne({
-      where: { id: newMessage.id },
-      relations: ['replyMessage', 'sender'],
-    });
-    const { onlineUsersRoom, offlineUsersRoom } =
-      await this.chatRoomService.getUserIdsStatusRoom(room.id);      
-
+  
+    // Lưu tin nhắn vào cơ sở dữ liệu
+    await this.messageRepository.save(newMessage);
+  
+    // Lấy danh sách người dùng trong phòng chat (online và offline)
+    const { onlineUsersRoom, offlineUsersRoom } = await this.chatRoomService.getUserIdsStatusRoom(room.id);
+  
+    // Emit sự kiện tin nhắn mới
     this.eventEmitter.emit(EventEmitterKey.NEW_MESSAGE, {
-      roomId: roomId,
-      onlineUsersRoom: onlineUsersRoom,
-      offlineUsersRoom: offlineUsersRoom,
-      msgData: newMsg,
+      roomId: room.id,
+      onlineUsersRoom,
+      offlineUsersRoom,
+      msgData: newMessage,
       createdAt: new Date(),
-    } as NewMessageEvent);
-
-    const messageStatus = onlineUsersRoom.length > 0 ?
-     MessageViewStatus.RECEIVED : MessageViewStatus.SENT 
-         
-    return plainToInstance(MessageResDto, {...newMsg, status: messageStatus});
+    });
+  
+    // Kiểm tra trạng thái tin nhắn (đã nhận hay chưa)
+    const messageStatus =
+      onlineUsersRoom.length > 0 ? MessageViewStatus.RECEIVED : MessageViewStatus.SENT;
+  
+    // Trả về thông tin tin nhắn đã được xử lý
+    return plainToInstance(MessageResDto, { 
+      ...newMessage, 
+      status: messageStatus,
+      fileInfo: fileInfo || null, // Thêm thông tin file vào response nếu có
+    });
   }
+  
 
   async loadMoreMessage(
     reqDto: LoadMoreMessagesReqDto,

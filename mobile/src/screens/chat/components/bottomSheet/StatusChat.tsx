@@ -19,8 +19,6 @@ const StatusChat = ({ isGroup }: Props) => {
       setTypingUser(data.userName)
     },
   });
-  
-  
 
   const dot1 = useRef(new Animated.Value(1)).current;
   const dot2 = useRef(new Animated.Value(1)).current;

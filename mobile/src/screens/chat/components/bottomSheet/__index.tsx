@@ -24,9 +24,7 @@ import {appSelector} from '~/features/app/appSlice';
 import {MessageContentType} from '~/features/message/dto/message.enum';
 import MemberRepository from '~/database/repositories/MemberRepository';
 import { MMKVStore } from '~/utils/storage';
-import BottomSheet from '@gorhom/bottom-sheet';
 import MenuList from './Menulist';
-import UserRepository from '~/database/repositories/UserRepository';
 
 interface BottomSheetProps {
   roomId: string;
@@ -38,8 +36,6 @@ type ActiveComponent = 'keyboard' | 'emojis' | 'menu' | 'mic' | 'image' | null;
 const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
   ({roomId, onTextChange, onEmojiChange}) => {
     const inputRef = useRef<TextInput>(null);
-    const bottomSheetRef = useRef<BottomSheet>(null);
-
     const currentMemberMyId = MMKVStore.getCurrentMemberMeId();
     const currentRoomId = MMKVStore.getCurrentRoomId();
     const {emit} = useSocket();
@@ -54,7 +50,6 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
     const scaleSend = useRef(new Animated.Value(0)).current;
     const roomRepo = RoomRepository.getInstance()
     const messageRepo = MessageRepository.getInstance()
-    const userRepo = UserRepository.getInstance()
 
     useEffect(() => {
       if (!currentMemberMyId && meData) {
@@ -176,7 +171,7 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
 
         setText('');
 
-        await MessageService.SentMessageText(dto, currentMemberMyId , roomRepo, messageRepo, userRepo);
+        await MessageService.SentMessageText(dto, currentMemberMyId , roomRepo, messageRepo);
       }
     };
 

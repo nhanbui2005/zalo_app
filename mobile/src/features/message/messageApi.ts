@@ -18,9 +18,7 @@ const loadMoreMessage= async (dto: CursorPaginatedReq<string>): Promise<CursorPa
     throw error;
   }
 }
-
-
-const SentMessage = async (dto: _MessageSentReq)
+const SentTextMessage = async (dto: _MessageSentReq)
 : Promise<_MessageSentRes> => {
   try {
      const a = await axiosInstance.post(`messages/${dto.roomId}/text`, dto) as _MessageSentRes     
@@ -31,8 +29,20 @@ const SentMessage = async (dto: _MessageSentReq)
   }
 };
 
+const SentMediaMessage = async (dto: _MessageSentReq)
+: Promise<_MessageSentRes> => {
+  try {
+     const a = await axiosInstance.post(`messages/${dto.roomId}/media`, dto) as _MessageSentRes     
+     return a
+  } catch (error: any) {
+    console.error('Error while sending message:', error);
+    throw error;
+  }
+};
+
 
 export const MessageApi = {
   loadMoreMessage,
-  SentMessage,
+  SentTextMessage,
+  SentMediaMessage
 }
