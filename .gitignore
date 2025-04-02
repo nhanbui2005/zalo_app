@@ -1,0 +1,7 @@
+# Bỏ qua node_modules
+mobile/node_modules/
+
+# Bỏ qua thư mục build
+mobile/android/app/build/
+mobile/ios/build/
+mobile/.gradle/
