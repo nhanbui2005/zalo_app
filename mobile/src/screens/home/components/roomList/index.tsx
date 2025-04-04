@@ -3,7 +3,8 @@ import {StyleSheet, Text, View, FlatList} from 'react-native';
 import {useRoomList} from '~/hooks/Ui/useRoomList';
 import ItemChatHome from '../roomItem';
 import { useNavigation } from '@react-navigation/native';
-import { UModalRef } from '~/components/Common/modal/UModal';
+
+import UModal, { UModalRef } from '~/components/Common/modal/UModal';
 import { MainNavProp } from '~/routers/types';
 import ModalContent_Conversation from '~/components/Common/modal/content/ModalContent_Conversation';
 
@@ -38,6 +39,7 @@ const RoomListView = () => {
           />
         )}
       />
+      <UModal ref={modalRef} />
     </View>
   );
 };

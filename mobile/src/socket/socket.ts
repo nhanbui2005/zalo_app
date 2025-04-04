@@ -1,11 +1,12 @@
 import { io, Socket } from "socket.io-client";
+import { SOCKET_UR } from "~/utils/enviroment";
 
 // Danh sách socket theo namespace
 const sockets: Record<string, Socket> = {}; 
 
 export const connectSocket = (namespace: string, accesstoken: string): Socket => {  
   if (!sockets[namespace]) {   
-    sockets[namespace] = io(`http://192.168.1.21:7777/${namespace}`, {
+    sockets[namespace] = io(`${SOCKET_UR}${namespace}`, {
       transports: ["websocket"],
       auth: {
         token: `Bearer ${accesstoken ?? ""}`,

@@ -94,11 +94,9 @@ export const useMessageListWithInfiniteScroll = () => {
         );
         const subscription = observable.subscribe((newMessages) => {
           setOriginalMessages((prev) => {            
-            // Lọc tin nhắn mới để tránh trùng lặp
-            const latestMessages = newMessages.filter((msg) => !prev.some((existing) => existing.id === msg.id));
-            // Thêm tin nhắn mới vào danh sách gốc
-            
-            const updatedOriginalMessages = [...latestMessages, ...prev];
+            // Thay vì lọc tin nhắn mới, chúng ta sẽ thay thế toàn bộ danh sách
+            // để đảm bảo rằng các thay đổi ID được phát hiện
+            const updatedOriginalMessages = [...newMessages];
             // Áp dụng mapToMessageItemDisplay cho toàn bộ danh sách
             const displayMessages = mapToMessageItemDisplay(updatedOriginalMessages, fetchedUserMaps);
             setMessages(displayMessages);

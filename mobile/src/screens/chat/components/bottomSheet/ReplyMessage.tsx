@@ -1,74 +1,96 @@
 import React, { forwardRef, useImperativeHandle, useState } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
-import { colors } from "~/styles/Ui/colors";
-import { iconSize } from "~/styles/Ui/icons";
-import { Assets } from "~/styles/Ui/assets";
-import { textStyle } from "~/styles/Ui/text";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useChatStore } from "~/stores/zustand/chat.store";
+import { _MessageSentRes } from "~/features/message/dto/message.dto.parent";
+import { colors } from "~/styles/Ui/colors";
 
 export interface ReplyMessageRef {
-  show: (name: string, message: string) => void;
-  hide: () => void;
+  show: (isVisible: boolean, isReply: boolean) => void;
 }
 
 const ReplyMessageComponent = forwardRef<ReplyMessageRef>((_, ref) => {
-  const {setCurentMessageRepling} = useChatStore()
+  const { curentMessageRepling } = useChatStore();
   const [isVisible, setIsVisible] = useState(false);
-  const [senderName, setSenderName] = useState("");
-  const [messageContent, setMessageContent] = useState("");
+  const [isReply, setIsReply] = useState(false);
 
-  // Dùng useImperativeHandle để tạo phương thức điều khiển từ cha
   useImperativeHandle(ref, () => ({
-    show: (name, message) => {
-      setSenderName(name);
-      setMessageContent(message);
-      setIsVisible(true);
-    },
-    hide: () => {
-      setIsVisible(false)
+    show: (visible: boolean, reply: boolean) => {
+      setIsVisible(visible);
+      setIsReply(reply);
     },
   }));
 
-  if (!isVisible) return null;
+  if (!isVisible || !curentMessageRepling) {
+    return null;
+  }
+
+  const username = curentMessageRepling?.sender?.username || 'Unknown';
 
   return (
-    <View style={styles.replyContainer}>
-      <View style={styles.replyIndicator}></View>
-      <View style={{ flex: 1 }}>
-        <Text style={textStyle.body_sm}>{senderName}</Text>
-        <View style={{ flexDirection: "row" }}>
-          <Text style={textStyle.body_md}>{messageContent}</Text>
+    <View style={styles.container}>
+      <View style={{height: '100%', width: 3, backgroundColor: colors.secondary, borderRadius: 10}}/>
+      <View style={styles.replyContainer}>
+        <View style={styles.replyInfo}>
+          <Text style={styles.replyLabel}>{username}</Text>
+          <Text style={styles.senderName}>{curentMessageRepling.content}</Text>
         </View>
+        <Text style={styles.messageContent} numberOfLines={1}>
+          {curentMessageRepling.content}
+        </Text>
       </View>
-      <TouchableOpacity onPress={() => {
-        setCurentMessageRepling(null)
-        setIsVisible(false)
-      }}>
-        <Image source={Assets.icons.back_gray} style={iconSize.medium} />
+      <TouchableOpacity 
+        style={styles.closeButton}
+        onPress={() => {
+          setIsVisible(false);
+          setIsReply(false);
+        }}
+      >
+        <Text style={styles.closeButtonText}>×</Text>
       </TouchableOpacity>
     </View>
   );
 });
 
-export default React.memo(ReplyMessageComponent);
-
 const styles = StyleSheet.create({
-  replyContainer: {
-    backgroundColor: "white",
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
     padding: 10,
-    paddingRight: 20,
-    borderBottomColor: colors.gray_light,
+    borderTopWidth: 1,
+    gap: 10,
+    borderTopColor: colors.gray_light,
     borderBottomWidth: 1,
-    marginBottom: 2,
+    borderBottomColor: colors.gray_light,
+    paddingHorizontal: 20
   },
-  replyIndicator: {
-    backgroundColor: colors.secondary,
-    width: 2,
-    height: "100%",
-    borderRadius: 10,
-    marginHorizontal: 10,
+  replyContainer: {
+    flex: 1,
+    marginRight: 10,
+  },
+  replyInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  replyLabel: {
+    color: colors.black,
+    fontWeight: 'bold',
+  },
+  senderName: {
+    color: colors.black,
+    fontWeight: 'bold',
+  },
+  messageContent: {
+    color: colors.black,
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 20,
+    color: colors.black,
   },
 });
+
+export default ReplyMessageComponent;

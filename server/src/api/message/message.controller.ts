@@ -13,6 +13,7 @@ import { DetailMessageReqDto } from './dto/get-detail-message-req.dto';
 import { RedisService } from '@/redis/redis.service'
 import { createCacheKey } from '@/utils/cache.util';
 import { CacheKey } from '@/constants/cache.constant';
+import { MessageContentType } from '@/constants/entity.enum';
 
 @ApiTags('messages')
 @Controller({
@@ -35,9 +36,19 @@ export class MessageController {
   @Post(':roomId/media')
   @UseInterceptors(
     FileInterceptor('file',{
-      limits: { fileSize: 500 * 1024 },
+      limits: { fileSize: 100 * 1024 * 1024 }, // Giới hạn 100MB cho tất cả media
       fileFilter: (req, file, callback) => {
-        const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+        const allowedMimeTypes = [
+          'image/png', 'image/jpeg', 'image/jpg', 'image/gif',
+          'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm',
+          'application/pdf', 'application/msword', 
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'text/plain',
+          'application/zip', 'application/x-rar-compressed',
+          'application/x-msdownload', 'application/octet-stream'
+        ];
         if (!allowedMimeTypes.includes(file.mimetype)) {
           return callback(new BadRequestException('Invalid file type'), false);
         }
@@ -62,6 +73,7 @@ export class MessageController {
   ) {
     return this.messageService.sendMessageUnified(roomId, dto, id);
   }
+
   @Get('/detail')
   findDetail(
     @Param('messageId') id: Uuid,
@@ -70,7 +82,6 @@ export class MessageController {
   ) {
     return this.messageService.findDetail(id, dto);
   }
-
 
   @Get()
   findAll(

@@ -6,7 +6,7 @@ export interface _MessageSentReq {
   roomId: string;
   content: string;
   contentType: MessageContentType;
-  replyMessageId: string;
+  replyMessageId?: string;
  
 }
 export interface _MessageSentRes

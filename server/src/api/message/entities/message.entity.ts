@@ -1,66 +1,61 @@
-import { Uuid } from "@/common/types/common.type";
-import { MessageContentType } from "@/constants/entity.enum";
-import { AbstractEntity } from "@/database/entities/abstract.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { ChatRoomEntity } from "../../chat-room/entities/chat-room.entity";
 import { MemberEntity } from "../../members/entities/member.entity";
+import { MediaEntity } from "../../media/entities/media.entity";
+import { MessageContentType, MessageViewStatus } from "@/constants/entity.enum";
+import { Uuid } from "@/common/types/common.type";
+import { AbstractEntity } from "@/database/entities/abstract.entity";
 
 @Entity('message')
-export class MessageEntity extends AbstractEntity{
-  constructor(data?: Partial<MessageEntity>) {
-    super();
-    Object.assign(this, data);
-  }
-
-  @PrimaryGeneratedColumn('uuid', {
-    primaryKeyConstraintName: 'PK_message_id',
-  })
-  id!: Uuid;
+export class MessageEntity extends AbstractEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: Uuid;
 
   @Column({
-    name:'sender_id'
+    name:'reply_message_id',
+    nullable: true
   })
-  senderId!: string;
-
-  @Column({
-    name:'room_id'
-  })
-  roomId!: string;
-
-  @Column()
-  content: string;
-
-  @Column({type:'enum', enum: MessageContentType})
-  type: MessageContentType;
-
-  @Column({name:'reply_message_id', nullable: true})
   replyMessageId?: Uuid;
 
-  @ManyToOne(()=>MemberEntity, (member) => member.messages)
-  @JoinColumn({
-    name:'sender_id',
-    referencedColumnName:'id',
-    foreignKeyConstraintName:'FK_message_sender'
+  @Column({
+    name:'content',
+    type: 'text',
+    nullable: true
   })
-  sender?: MemberEntity
+  content: string;
+
+  @Column({
+    type: 'enum',
+    enum: MessageContentType,
+    default: MessageContentType.TEXT
+  })
+  type: MessageContentType;
+
+  @Column({
+    type: 'enum',
+    enum: MessageViewStatus,
+    default: MessageViewStatus.SENT
+  })
+  status: MessageViewStatus;
+
+  @Column()
+  senderId!: string;
+
+  @Column({ name: 'room_id' })
+  roomId!: string;
+
+  @ManyToOne(()=>MemberEntity, (member) => member.messages)
+  @JoinColumn({name:'sender_id'})
+  sender!: MemberEntity;
 
   @ManyToOne(()=>ChatRoomEntity, (room) => room.messages)
-  @JoinColumn({
-    name:'room_id',
-    referencedColumnName:'id',
-    foreignKeyConstraintName:'FK_message_chatroom'
-  })
-  room?: ChatRoomEntity
+  @JoinColumn({name:'room_id'})
+  room!: ChatRoomEntity;
 
-  @ManyToOne(() => MessageEntity, (message) => message.replies, { nullable: true })
-  @JoinColumn({
-    name:'reply_message_id',
-    referencedColumnName:'id',
-    foreignKeyConstraintName:'FK_replymessage_message'
-  })
-  replyMessage: MessageEntity;
+  @OneToOne(() => MessageEntity, { nullable: true })
+  @JoinColumn({name:'reply_message_id'})
+  replyMessage?: MessageEntity;
 
-  @OneToMany(() => MessageEntity, (message) => message.replyMessage)
-  replies: MessageEntity[];
-
+  @OneToMany(() => MediaEntity, media => media.message)
+  media: MediaEntity[];
 }

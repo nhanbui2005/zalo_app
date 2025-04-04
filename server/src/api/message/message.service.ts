@@ -32,6 +32,7 @@ import { RelationStatus } from '@/constants/entity-enum/relation.enum';
 import { ChatRoomService } from '../chat-room/chat-room.service';
 import { DetailMessageReqDto } from './dto/get-detail-message-req.dto';
 import { NewMessageEvent } from 'src/events/dto/message.gateway.dto';
+import { MediaService } from '../media/media.service';
 
 @Injectable()
 export class MessageService {
@@ -49,6 +50,7 @@ export class MessageService {
     private relationService: RelationService,
     private eventEmitter: EventEmitter2,
     private cloundService: CloudinaryService,
+    private mediaService: MediaService,
   ) {}
 
   async sendMessageUnified(
@@ -81,14 +83,16 @@ export class MessageService {
   
     let fileUrl = null;
     let fileInfo = null;
-  
+    let mediaEntity = null;
+    let messageContent = '';
+
     // Nếu có file và contentType không phải là văn bản
     if (contentType !== MessageContentType.TEXT && file) {
       // Upload file lên Cloudinary
       const resultFile = await this.cloundService.uploadFile(file);
       fileUrl = resultFile.secure_url;
   
-      // Thông tin chi tiết về file (nếu là video hoặc hình ảnh)
+      // Thông tin chi tiết về file
       fileInfo = {
         url: resultFile.secure_url,
         public_id: resultFile.public_id,
@@ -98,25 +102,57 @@ export class MessageService {
         height: resultFile.height || null,
         duration: resultFile.duration || null, // Nếu là video
         preview_url: resultFile.resource_type === 'video' ? resultFile.preview_url : null, // Thumbnail của video
+        originalName: file.originalname, // Tên file gốc
+        mimeType: file.mimetype, // Loại MIME của file
       };
+      
+      // Nếu là file văn bản, thêm nội dung vào content
+      if (contentType === MessageContentType.FILE && file.mimetype.startsWith('text/')) {
+        const fileContent = file.buffer.toString('utf8');
+        messageContent = fileContent.substring(0, 1000); // Giới hạn nội dung hiển thị
+      }
+    } else if (contentType === MessageContentType.TEXT) {
+      // Nếu là tin nhắn văn bản, sử dụng content từ dto
+      messageContent = content || '';
     }
   
     // Tạo đối tượng tin nhắn mới
-    const newMessage = new MessageEntity({
-      senderId: memberSent.id,
-      sender: memberSent,
-      roomId: room.id,
-      content: contentType === MessageContentType.TEXT ? content : fileUrl,
-      type: contentType,
-      replyMessageId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: senderId,
-      updatedBy: senderId,
-    });
+    const newMessage = new MessageEntity();
+    newMessage.senderId = memberSent.id;
+    newMessage.sender = memberSent;
+    newMessage.roomId = room.id;
+    newMessage.content = messageContent;
+    newMessage.type = contentType;
+    newMessage.replyMessageId = replyMessageId as Uuid;
+    newMessage.createdAt = new Date();
+    newMessage.updatedAt = new Date();
+    newMessage.createdBy = senderId;
+    newMessage.updatedBy = senderId;
   
     // Lưu tin nhắn vào cơ sở dữ liệu
-    await this.messageRepository.save(newMessage);
+    const savedMessage = await this.messageRepository.save(newMessage);
+  
+    // Nếu có file, lưu thông tin media
+    if (fileInfo) {
+      // Tạo media entity với messageId
+      mediaEntity = await this.mediaService.createForMessage(
+        savedMessage.id,
+        {
+          url: fileInfo.url,
+          publicId: fileInfo.public_id,
+          format: fileInfo.format,
+          bytes: fileInfo.bytes,
+          width: fileInfo.width,
+          height: fileInfo.height,
+          duration: fileInfo.duration,
+          previewUrl: fileInfo.preview_url,
+          originalName: fileInfo.originalName,
+          mimeType: fileInfo.mimeType,
+          type: contentType,
+        },
+        senderId
+      );
+    }
   
     // Lấy danh sách người dùng trong phòng chat (online và offline)
     const { onlineUsersRoom, offlineUsersRoom } = await this.chatRoomService.getUserIdsStatusRoom(room.id);
@@ -126,7 +162,7 @@ export class MessageService {
       roomId: room.id,
       onlineUsersRoom,
       offlineUsersRoom,
-      msgData: newMessage,
+      msgData: savedMessage,
       createdAt: new Date(),
     });
   
@@ -134,11 +170,15 @@ export class MessageService {
     const messageStatus =
       onlineUsersRoom.length > 0 ? MessageViewStatus.RECEIVED : MessageViewStatus.SENT;
   
+    // Lấy danh sách media của tin nhắn
+    const mediaList = await this.mediaService.findMediaByMessageId(savedMessage.id);
+  
     // Trả về thông tin tin nhắn đã được xử lý
     return plainToInstance(MessageResDto, { 
-      ...newMessage, 
+      ...savedMessage, 
       status: messageStatus,
       fileInfo: fileInfo || null, // Thêm thông tin file vào response nếu có
+      media: mediaList, // Thêm danh sách media vào response
     });
   }
   

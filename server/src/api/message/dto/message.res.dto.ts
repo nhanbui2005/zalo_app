@@ -6,11 +6,13 @@ import {
   DateField,
   NumberField,
   StringField,
+  ObjectField,
 } from '@/decorators/field.decorators';
 import { Exclude, Expose } from 'class-transformer';
 import { WrapperType } from '@/common/types/types';
 import { MemberResDto } from '@/api/relationship/dto/member.res.dto';
 import { RoomResDto } from '@/api/chat-room/dto/room.res.dto';
+import { MediaEntity } from '@/api/media/entities/media.entity';
 
 @Exclude()
 export class MessageResDto {
@@ -73,4 +75,12 @@ export class MessageResDto {
   @NumberField()
   @Expose()
   unReadMsgCount?: number;
+
+  @ObjectField()
+  @Expose()
+  fileInfo?: any;
+
+  @ClassField(() => MediaEntity, { each: true })
+  @Expose()
+  media?: MediaEntity[];
 }

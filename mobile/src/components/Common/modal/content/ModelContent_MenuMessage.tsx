@@ -15,7 +15,6 @@ import {Assets} from '~/styles/Ui/assets';
 import {textStyle} from '~/styles/Ui/text';
 import RNHapticFeedback from 'react-native-haptic-feedback';
 import {WINDOW_HEIGHT} from '~/utils/Ui/dimensions';
-import {DisplayMessage} from '~/screens/chat/ChatScreen';
 import {formatToHoursMinutes} from '~/utils/Convert/timeConvert';
 import { _MessageSentReq, _MessageSentRes } from '~/features/message/dto/message.dto.parent';
 
@@ -194,10 +193,10 @@ const ModalContent_MenuMessage: React.FC<Props> = ({
             flexDirection: 'row',
             justifyContent: message?.isSelfSent ? 'flex-end' : 'flex-start',
           }}>
-          {!message?.isSelfSent && (
+          {!message?.isSelfSent && message?.sender?.user?.avatarUrl && (
             <Image
               style={styles.avatar}
-              source={{uri: message?.sender?.user.avatarUrl}}
+              source={{uri: message.sender.user.avatarUrl}}
             />
           )}
           <View

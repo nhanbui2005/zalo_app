@@ -85,6 +85,7 @@ const SentMessageMedia = async (
   baseMediaInfo: BaseMediaInfor,
   roomRepository: RoomRepository,
   messageRepository: MessageRepository,
+  file?: { uri: string; type: string; name: string }
 ): Promise<void> => {
   try {   
     // 1. Tạo tin nhắn giả và lưu cục bộ
@@ -107,9 +108,11 @@ const SentMessageMedia = async (
       roomRepository,
       messageRepository,
     );
+    
     if (true) {
       // 3. Gửi tin nhắn lên server
-      const messageRes = await MessageApi.SentMediaMessage(dto);            
+      const messageRes = await MessageApi.SentMediaMessage(dto, file);            
+      
       // 4. Cập nhật tin nhắn với dữ liệu từ server
       await messageRepository.updateSentMessage(
         tempId,

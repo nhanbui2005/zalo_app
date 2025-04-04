@@ -7,6 +7,7 @@ import { RelationModule } from './relationship/relation.module';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { UploadModule } from './upload/upload.module';
 import { ChatRoomModule } from './chat-room/chat-room.module';
+import { MediaModule } from './media/media.module';
 
 @Module({
   imports: [
@@ -17,7 +18,8 @@ import { ChatRoomModule } from './chat-room/chat-room.module';
     ChatRoomModule,
     RelationModule,
     CloudinaryModule,
-    UploadModule
+    UploadModule,
+    MediaModule
   ],
 })
 export class ApiModule {}

@@ -30,7 +30,7 @@ const initialState = {
 export const useChatStore = create<ChatStore>((set, get) => ({
   ...initialState,
 
-  setCurentMessageRepling: (message: MessagParente | null) => {
+  setCurentMessageRepling: (message: MessagParente | null) => {    
     set({ curentMessageRepling: message ?? null });
   },
   setPagination: (pagination: PageOptionsDto)=>{

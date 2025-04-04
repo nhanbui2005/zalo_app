@@ -31,13 +31,39 @@ const SentTextMessage = async (dto: _MessageSentReq)
   }
 };
 
-const SentMediaMessage = async (dto: _MessageSentReq)
+const SentMediaMessage = async (dto: _MessageSentReq, file?: { uri: string; type: string; name: string })
 : Promise<_MessageSentRes> => {
   try {
-     const a = await axiosInstance.post(`messages/${dto.roomId}/media`, dto) as _MessageSentRes     
-     return a
+    // Tạo FormData để gửi file
+    const formData = new FormData();
+    
+    // Thêm file vào FormData nếu có
+    if (file) {
+      formData.append('file', {
+        uri: file.uri,
+        type: file.type,
+        name: file.name,
+      } as any);
+    }
+    
+    // Thêm các trường dữ liệu khác
+    formData.append('roomId', dto.roomId);
+    formData.append('content', dto.content || '');
+    formData.append('contentType', dto.contentType);
+    if (dto.replyMessageId) {
+      formData.append('replyMessageId', dto.replyMessageId);
+    }
+    
+    // Gửi request với FormData
+    const response = await axiosInstance.post(`messages/${dto.roomId}/media`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }) as _MessageSentRes;
+    
+    return response;
   } catch (error: any) {
-    console.error('Error while sending message:', error);
+    console.error('Error while sending media message:', error);
     throw error;
   }
 };

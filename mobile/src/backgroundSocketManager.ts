@@ -53,7 +53,7 @@ const backgroundSocketTask = async (taskData) => {
       try {        
         if (data.senderId) {
           if ( setMemberMyIds.has(data.senderId)) return
-        }        
+        }                
         await syncNewMessage(data, roomRepo, messageRepo, );
       } catch (error) {
         console.error('Error syncing new message:', error);

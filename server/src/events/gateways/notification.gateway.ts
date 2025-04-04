@@ -20,6 +20,7 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { ChatRoomService } from '@/api/chat-room/chat-room.service';
 import Redis from 'ioredis';
 import { NewMessageEvent } from '../dto/message.gateway.dto';
+import { ReadableStream } from 'stream/web';
 
 
 const CHAT_ROOM = 'CHAT_ROOM_';
@@ -343,5 +344,47 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
     // Sau khi gửi, xoá các yêu cầu đã xử lý
     await this.redisService.del(createCacheKey(CacheKey.UNRECEIVE_HANDLE_REQUEST_RELATION, userId));
+  }
+
+  @SubscribeMessage('file_stream')
+  async handleFileStream(
+    @MessageBody() streamData: { roomId: string, fileStream: ReadableStream },
+    @ConnectedSocket() client: Socket
+  ) {
+    const { roomId, fileStream } = streamData;
+    
+    // Xử lý stream và gửi đến các client trong phòng
+    this.server.to(SOCKET_ROOM + roomId).emit(SocketEmitKey.FILE_STREAM, {
+      stream: fileStream
+    });
+  }
+
+  @SubscribeMessage('file_chunk')
+  async handleFileChunk(
+    @MessageBody() chunkData: { 
+      roomId: string,
+      fileId: string,
+      chunkIndex: number,
+      totalChunks: number,
+      data: any
+    },
+    @ConnectedSocket() client: Socket
+  ) {
+    const { roomId, fileId, chunkIndex, totalChunks, data } = chunkData;
+    
+    // Gửi chunk đến các client trong phòng
+    this.server.to(SOCKET_ROOM + roomId).emit(SocketEmitKey.FILE_CHUNK, {
+      fileId,
+      chunkIndex,
+      totalChunks,
+      data
+    });
+
+    // Nếu là chunk cuối cùng
+    if (chunkIndex === totalChunks - 1) {
+      this.server.to(SOCKET_ROOM + roomId).emit(SocketEmitKey.FILE_COMPLETE, {
+        fileId
+      });
+    }
   }
 }

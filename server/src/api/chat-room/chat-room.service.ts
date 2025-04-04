@@ -234,6 +234,9 @@ export class ChatRoomService {
       .where('r.id = :roomId',{roomId})
       .getOne()
 
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
 
     const isGroup = room.type && room.type == RoomType.GROUP 
     const memberMe = room.members.filter(m => m.user.id == meId)[0]
@@ -248,7 +251,7 @@ export class ChatRoomService {
     return plainToInstance(RoomResDto, {
       id: room.id,
       roomName,
-      type: room.type,
+      type: room?.type,
       memberId: memberMe.id,
       members:room.members,
       roomAvatar,

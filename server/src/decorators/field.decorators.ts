@@ -56,6 +56,10 @@ type IBooleanFieldOptions = IFieldOptions;
 type ITokenFieldOptions = IFieldOptions;
 type IClassFieldOptions = IFieldOptions;
 
+interface IObjectFieldOptions extends IFieldOptions {
+  required?: boolean;
+}
+
 export function NumberField(
   options: Omit<ApiPropertyOptions, 'type'> & INumberFieldOptions = {},
 ): PropertyDecorator {
@@ -445,6 +449,35 @@ export function ClassFieldOptional<TClass extends Constructor>(
     IsOptional({ each: options.each }),
     ClassField(getClass, { required: false, ...options }),
   );
+}
+
+export function ObjectField(
+  options: Omit<ApiPropertyOptions, 'type'> & IObjectFieldOptions = {},
+): PropertyDecorator {
+  const decorators = [];
+
+  if (options.required !== false) {
+    decorators.push(IsDefined());
+  }
+
+  if (options.nullable) {
+    decorators.push(IsNullable());
+  } else {
+    decorators.push(NotEquals(null));
+  }
+
+  if (options.swagger !== false) {
+    const { required = true, ...restOptions } = options;
+    decorators.push(
+      ApiProperty({
+        type: () => Object,
+        required: !!required,
+        ...restOptions,
+      }),
+    );
+  }
+
+  return applyDecorators(...decorators);
 }
 
 function getVariableName(variableFunction: () => any) {

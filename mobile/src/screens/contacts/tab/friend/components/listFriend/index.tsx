@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import {
   FlatList,
@@ -7,40 +8,29 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MemberRepository from '~/database/repositories/MemberRepository';
 import { UserItemView } from '~/database/types/user.typee';
 import {RelationStatus} from '~/features/relation/dto/relation.dto.enum';
 import { useUserList } from '~/hooks/Ui/useUserList';
-
-// Định nghĩa colors (giả lập, bạn có thể thay bằng colors thực tế từ dự án)
-const colors = {
-  white: '#FFFFFF',
-  gray_weight: '#666666',
-  secondary: '#E0E0E0',
-};
-
-// Định nghĩa textStyle và imagesStyle (giả lập, thay bằng style thực tế nếu có)
-const textStyle = {
-  body_md: {fontSize: 16, color: '#000000'},
-  description_seen: {fontSize: 14},
-};
-
-const imagesStyle = {
-  avatar_50: {width: 50, height: 50, borderRadius: 25},
-};
-
-// Định nghĩa interface UserBase nếu chưa có
-interface UserBase {
-  id: string;
-  username: string;
-  avatarUrl: string;
-}
+import { MainNavProp, StackNames } from '~/routers/types';
+import { colors } from '~/styles/Ui/colors';
+import { imagesStyle } from '~/styles/Ui/image';
+import { textStyle } from '~/styles/Ui/text';
+import { MMKVStore } from '~/utils/storage';
 
 const FriendListView: React.FC = () => {
+  const mainNav = useNavigation<MainNavProp>();
+  const memberRepo = MemberRepository.getInstance()
   const {users, isLoading} = useUserList(RelationStatus.FRIEND);
   
-  const handleItemPartnerPress = (userId: string) => {
-    console.log(`Pressed user with ID: ${userId}`);
-    // Thêm logic chuyển màn hình hoặc xử lý tại đây
+  const handleItemPartnerPress = async (userId: string) => {
+    const roomId = await memberRepo.getRoomIdByUserIs(userId)
+    if (!roomId) {
+      console.log('not found roomId in listFriend');
+      return
+    }
+    MMKVStore.setCurrentRoomId(roomId)
+    mainNav.navigate(StackNames.ChatScreen)
   };
 
   // Hàm render từng item trong FlatList

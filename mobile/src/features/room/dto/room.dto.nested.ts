@@ -14,12 +14,16 @@ export interface Room {
   memberCount?: number
   unReadMsgCount?: number
 }
+
 export interface MemberResDto {
   id: string;
   msgRTime: Date;
   msgVTime: Date;
   role: string;
-  user: UserEntity;
+  user?: UserEntity;
+  username?: string;
+  avatarUrl?: string;
+  preferredName?: string;
 }
 
 export interface LastMsg {

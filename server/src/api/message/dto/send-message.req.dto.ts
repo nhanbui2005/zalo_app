@@ -9,11 +9,11 @@ export class SendMessageReqDto {
   @UUIDFieldOptional()
   roomId?: Uuid
 
-  @StringFieldOptional({minLength:1, maxLength:100})
+  @StringFieldOptional({maxLength:100})
   content?: string
 
   @UUIDFieldOptional()
-  replyMessageId: Uuid
+  replyMessageId?: Uuid
 
   @EnumFieldOptional(()=>MessageContentType)
   contentType: MessageContentType

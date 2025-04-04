@@ -1,4 +1,4 @@
-import { MessageContentType, MessageViewStatus } from './message.enum';
+import { MessageContentType } from './message.enum';
 import { MemberResDto } from '~/features/room/dto/room.dto.nested';
 
 export interface MessagParente {

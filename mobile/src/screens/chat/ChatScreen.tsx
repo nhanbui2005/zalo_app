@@ -24,22 +24,30 @@ import {useRoomStore} from '~/stores/zustand/room.store';
 import { emitEvent } from '~/socket/socket';
 import MemberRepository from '~/database/repositories/MemberRepository';
 import { MMKVStore } from '~/utils/storage';
+import MessageRepository from '~/database/repositories/MessageRepository';
+import { MessageContentType, MessageViewStatus } from '~/features/message/dto/message.enum';
+import { KeyItemMenu } from '~/components/Common/modal/content/ModelContent_MenuMessage';
+import { MessagParente } from '~/features/message/dto/message.dto.nested';
+import ModalContent_MenuMessage from '~/components/Common/modal/content/ModelContent_MenuMessage';
+import { nanoid } from 'nanoid/non-secure';
 
 
 const ChatScreen: React.FC = () => {
   const mainNav = useNavigation<MainNavProp>();
   const currentRoomId = MMKVStore.getCurrentRoomId()
-  const {curentMessageRepling, clearData} = useChatStore();
+  const currentMemberMyId = MMKVStore.getCurrentMemberMeId()  
+  const {curentMessageRepling, clearData, setCurentMessageRepling} = useChatStore();
   const {currentPartnerId,setCurrentRoom} = useRoomStore();
   const [room, setRoom] = useState<Room>();
+  const [imageSelected, setImageSelected] = useState()
 
   const modalRef = useRef<UModalRef>(null);
-  const replyingRef = useRef<ReplyMessageRef>(null);
+  const replyMessageRef = useRef<ReplyMessageRef>(null);
   const messageSelectedRef = useRef<_MessageSentRes>();
-  const currenMessageReplyingRef = useRef<any>(curentMessageRepling);
   const inputText = useRef('');
   const isFocused = useIsFocused();
 
+  // Set chặn notifi khi ở chatscreen
   useEffect(() => {    
     if (isFocused) {
       MMKVStore.setAllowNotification(false); 
@@ -50,6 +58,7 @@ const ChatScreen: React.FC = () => {
     };
   }, [isFocused]);
 
+  // Setup data
   useEffect(() => {    
     const setData = async (): Promise<void> => {
       try {
@@ -83,19 +92,29 @@ const ChatScreen: React.FC = () => {
     setData();
 
     return () => {
+      // Nếu đang có tin nhắn đang reply, cập nhật lastMessage
+      if (curentMessageRepling) {
+        const roomRepo = RoomRepository.getInstance();
+        const messageRepo = MessageRepository.getInstance();
+        const messageModel = messageRepo.prepareMessages([{
+          roomId: currentRoomId,
+          messages: [{
+            id: `temp-${nanoid()}`,
+            content: '[Trả lời]',
+            type: MessageContentType.TEXT,
+            status: MessageViewStatus.SENT,
+            revoked: false,
+            senderId: curentMessageRepling.sender?.id || '',
+            roomId: currentRoomId,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }]
+        }]);
+        roomRepo.updateRoomLastMessage(currentRoomId, messageModel[0], 0);
+      }
       clearData();
       emitEvent('messages','leave-room', {roomId: currentRoomId});
     };
-  }, []);
-
-  useEffect(() => {
-    const reply = currenMessageReplyingRef.current;
-    if (currenMessageReplyingRef.current) {
-      replyingRef.current?.show(
-        reply?.sender?.user.username ?? 'Unknown',
-        reply?.content ?? '',
-      );
-    }
   }, []);
 
   //vào room reset lại unread
@@ -107,9 +126,80 @@ const ChatScreen: React.FC = () => {
   const handleInputChange = useCallback((text: string) => {
     inputText.current = text;
   }, []);
+
   const handleEmojiChange = useCallback((text: string) => {
     inputText.current += text;
   }, []);
+
+  const handleItemMenuPress = (key: KeyItemMenu) => {
+    switch (key) {
+      case KeyItemMenu.REPLY:
+        if (messageSelectedRef.current) {
+          const replyMessage: MessagParente = {
+            id: messageSelectedRef.current.id,
+            content: messageSelectedRef.current.content,
+            sender: messageSelectedRef.current.sender || {
+              id: '',
+              msgRTime: new Date(),
+              msgVTime: new Date(),
+              role: '',
+              user: {
+                id: '',
+                username: 'Unknown',
+                isActive: true,
+                isVerify: false,
+                lastAccessed: new Date(),
+                isOnline: false,
+                lastOnline: new Date()
+              }
+            },
+            type: messageSelectedRef.current.type,
+            createdAt: new Date(messageSelectedRef.current.createdAt || Date.now())
+          };
+          setCurentMessageRepling(replyMessage);
+          modalRef.current?.close();
+          if (replyMessageRef.current) {
+            replyMessageRef.current.show(true, true);
+          } else {
+            console.log('ReplyMessageRef is null');
+          }
+        }
+        break;
+      case KeyItemMenu.FORWARD:
+        break;
+      case KeyItemMenu.SAVE_CLOUD:
+        break;
+      case KeyItemMenu.RECALL:
+        break;
+      case KeyItemMenu.COPY:
+        break;
+      case KeyItemMenu.PIN:
+        break;
+      case KeyItemMenu.REMINDER:
+        break;
+      case KeyItemMenu.MULTI_SELECT:
+        break;
+      case KeyItemMenu.QUICK_MESSAGE:
+        break;
+      case KeyItemMenu.TEXT_READER:
+        break;
+      case KeyItemMenu.DETAILS:
+        break;
+      case KeyItemMenu.DELETE:
+        break;
+    }
+  };
+
+  const handleLongItemPress = (pageY: number, message: any) => {  
+    messageSelectedRef.current = message;
+    modalRef.current?.open(
+      <ModalContent_MenuMessage
+        pageY={pageY}
+        message={message}
+        onItemPress={handleItemMenuPress}
+      />
+    );
+  };
 
   return (
     <SocketProvider namespace='messages'>
@@ -136,17 +226,15 @@ const ChatScreen: React.FC = () => {
           }}
         />
 
-        <MessageListView />
-
-        <StatusChat isGroup= {room?.memberCount != 2} />
-
-        <ReplyMessageComponent ref={replyingRef} />
+        <MessageListView onLongItemPress={handleLongItemPress} />
+        <StatusChat isGroup={room?.memberCount != 2} />
+        <ReplyMessageComponent ref={replyMessageRef} />
 
         <BottomSheetComponent
-            roomId={currentRoomId ?? ''}
-            onTextChange={handleInputChange}
-            onEmojiChange={handleEmojiChange}
-          />
+          roomId={currentRoomId}
+          onTextChange={handleInputChange}
+          onEmojiChange={handleEmojiChange}
+        />
       </View>
     </SocketProvider>
   );
@@ -156,6 +244,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background_mess,
+  },
+  content: {
+    flex: 1,
+    position: 'relative',
   },
 });
 

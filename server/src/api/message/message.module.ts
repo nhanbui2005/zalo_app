@@ -16,6 +16,7 @@ import { RedisModule } from '@/redis/redis.module';
 import { RelationModule } from '../relationship/relation.module';
 import { EventsModule } from 'src/events/events.module';
 import { UserModule } from '../user/user.module';
+import { MediaModule } from '../media/media.module';
 
 
 @Module({
@@ -27,6 +28,7 @@ import { UserModule } from '../user/user.module';
     RelationModule,
     CloudinaryModule,
     UserModule,
+    MediaModule,
     TypeOrmModule.forFeature([
       UserEntity,
       ChatRoomEntity,

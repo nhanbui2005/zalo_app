@@ -6,10 +6,11 @@ import axios, {
 } from 'axios';
 import store from '~/stores/redux/store';
 import {ACCESS_TOKEN} from '~/utils/Constants/authConstant';
+import { API_URL } from '~/utils/enviroment';
 import localStorage from '~/utils/localStorage';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://192.168.1.21:7777/api/v1/',//pham thi thi 5g 192.168.1.24
+  baseURL: API_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

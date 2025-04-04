@@ -1,10 +1,11 @@
 import { io } from "socket.io-client";
+import { SOCKET_UR } from "../constants/appConstant";
 
 const sockets = {};
 
 export const connectSocket = (namespace) => {  
   if (!sockets[namespace]) {    
-    sockets[namespace] = io(`http://192.168.1.21:7777/${namespace}`, {
+    sockets[namespace] = io(`${SOCKET_UR}${namespace}`, {
       transports: ["websocket"],
       auth: {
         token: `Bearer ${localStorage.getItem("accessToken")}`,

@@ -8,5 +8,11 @@ export enum SocketEmitKey {
   NEW_MESSAGE = 'new_message',
   FRIEND_STATUS = 'friend_status',
   EMOJIS_WHEN_CONNECT = 'emojis_when_connect',
-  EMOJI_MESSAGE = 'emojis-message'
+  EMOJI_MESSAGE = 'emojis-message',
+  
+  // File handling
+  FILE_STREAM = 'file_stream',
+  FILE_CHUNK = 'file_chunk',
+  FILE_COMPLETE = 'file_complete',
+  FILE_PROGRESS = 'file_progress'
 }

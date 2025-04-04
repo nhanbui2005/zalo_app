@@ -125,6 +125,7 @@ export async function syncNewMessage(
         messages: [{ ...newMessage, id: messageId }],
       },
     ]);
+  console.log('messagesPrepare', messagesPrepare);
   
     if (messagesPrepare.length === 0) {
       console.warn('Không có tin nhắn để đồng bộ.');

@@ -159,4 +159,14 @@ export default class MemberRepository {
 
     return members.length > 0 ? members.map(member => member._id) : null;
   }
+  async getRoomIdByUserIs(userId: string): Promise<string | null> {
+    const member = await this.membersCollection
+    .query(Q.where('user_id', userId))
+    .fetch();
+    if (member.length > 0) {
+      return member[0].roomId;  
+    } else {
+      return null; 
+    }
+  }
 }

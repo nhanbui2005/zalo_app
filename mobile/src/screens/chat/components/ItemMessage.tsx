@@ -6,6 +6,7 @@ import {
   Image,
   Pressable,
   Animated,
+  TouchableOpacity,
 } from 'react-native';
 import {colors} from '../../../styles/Ui/colors';
 import {imagesStyle} from '../../../styles/Ui/image';
@@ -18,22 +19,23 @@ import { _MessageSentReq, _MessageSentRes } from '~/features/message/dto/message
 import { Fonts } from '~/styles/Ui/fonts';
 import { MessageItemDisplay } from '~/database/types/message.type';
 import { useRoomStore } from '~/stores/zustand/room.store';
-
-
-// Định nghĩa interface MessagParente (giả định)
-interface MessagParente {
-  id: string;
-  content: string;
-  sender: {
-    user: {
-      username: string;
-    };
-  };
-}
+import ImageMessage from './ImageMessage';
+import { formatFileSize, formatDuration } from '~/utils/formatUtils';
+import { MediaService } from '~/services/MediaService';
+import FileMessage from './message-types/FileMessage';
+import VideoMessage from './message-types/VideoMessage';
 
 // Định nghĩa Props cho ItemMessage
 type Props = {
-  message: MessageItemDisplay;
+  message: MessageItemDisplay & {
+    media?: {
+      _id: string;
+      name: string;
+      size?: number;
+      duration?: number;
+      preview_image?: string;
+    };
+  };
   onLongPress?: (pageY: number) => void;
 };
 
@@ -132,16 +134,11 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
       case 'text':
         return <Text style={styles.messageText}>{content}</Text>;
       case 'image':
-        return (
-          <Image
-            source={Assets.images.demo}
-            style={{ width: 100, height: 100 }}
-          />
-        );
+        return <ImageMessage message={message} />;
       case 'file':
-        return <Text>Hiển thị tệp đính kèm</Text>;
+        return <FileMessage media={message.media} />;
       case 'video':
-        return <Text>Hiển thị video</Text>;
+        return <VideoMessage media={message.media} />;
       default:
         return <Text>Loại tin nhắn không xác định</Text>;
     }
@@ -322,7 +319,6 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
   );
 });
 
-
 const styles = StyleSheet.create({
   messageContainer: {
     borderRadius: 10,
@@ -462,6 +458,102 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     backgroundColor: colors.gray,
     color: 'white',
+  },
+
+  // File styles
+  fileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    padding: 8,
+    borderRadius: 8,
+    marginVertical: 4,
+  },
+  fileIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.secondary_bright,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fileIcon: {
+    width: 24,
+    height: 24,
+    tintColor: colors.primary,
+  },
+  fileInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  fileName: {
+    ...textStyle.body_sm,
+    color: colors.black,
+  },
+  fileSize: {
+    ...textStyle.body_xs,
+    color: colors.gray_icon,
+  },
+  downloadButton: {
+    padding: 8,
+  },
+  downloadIcon: {
+    width: 20,
+    height: 20,
+    tintColor: colors.primary,
+  },
+
+  // Video styles
+  videoContainer: {
+    width: 240,
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  videoThumbnail: {
+    width: '100%',
+    height: 135,
+    backgroundColor: colors.gray_icon,
+  },
+  videoPlaceholder: {
+    width: '100%',
+    height: 135,
+    backgroundColor: colors.gray_icon,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoIcon: {
+    width: 40,
+    height: 40,
+    tintColor: colors.white,
+  },
+  videoInfo: {
+    padding: 8,
+  },
+  videoName: {
+    ...textStyle.body_sm,
+    color: colors.black,
+  },
+  videoDuration: {
+    ...textStyle.body_xs,
+    color: colors.gray_icon,
+  },
+  playButton: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -25 }, { translateY: -25 }],
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playIcon: {
+    width: 24,
+    height: 24,
+    tintColor: colors.white,
   },
 });
 

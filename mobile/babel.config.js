@@ -7,5 +7,6 @@ module.exports = {
     ['@babel/transform-runtime'],
     ['module-resolver', { alias: { '~': './src' } }],
     ['react-native-reanimated/plugin'],
+    ['module:react-native-dotenv'], 
   ],
 };

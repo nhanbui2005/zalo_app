@@ -17,7 +17,7 @@ export interface UModalRef {
   close: () => void;
 }
 
-const UModal = forwardRef<UModalRef>(({},ref) => {  
+const UModal = forwardRef<UModalRef, {}>((props, ref) => {  
   const [visible, setVisible] = useState(false);
   const [modalContent, setModalContent] = useState<React.ReactNode>(null);
 
@@ -42,7 +42,9 @@ const UModal = forwardRef<UModalRef>(({},ref) => {
     >
       <Pressable style={styles.overlay} onPress={handleClose}>
         <View style={styles.modalContainer}>
-          <Pressable>{modalContent}</Pressable>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            {modalContent}
+          </Pressable>
         </View>
       </Pressable>
     </Modal>

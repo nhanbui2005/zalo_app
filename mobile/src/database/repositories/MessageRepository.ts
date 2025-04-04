@@ -72,8 +72,8 @@ export default class MessageRepository {
         query = query.extend(Q.where('created_at', Q.gt(afterCursor)));
       }
       
-      const observableQuery = query.observe();
-  
+      const observableQuery = query.observeWithColumns(['status', 'content', 'created_at']);
+        
       const subscription = observableQuery.subscribe(async messages => {    
         const messageIds = messages.map(msg => msg._id);
   
@@ -109,7 +109,7 @@ export default class MessageRepository {
         const mappedMessages: MessageItemView[] = messages.map(msg => {
           
           const mappedMessage = {
-            id: msg.id,
+            id: msg._id,
             content: msg.content,
             type: msg.type as MessageContentType,
             senderId: msg.senderId || '',
@@ -214,7 +214,7 @@ export default class MessageRepository {
            
             preparedMessages.push(
               messagesCollection.prepareCreate((message: MessageModel) => {
-                message._id = msg.id || nanoid();
+                message._id = msg.id || '';
                 message.content = msg.content || '';
                 message.roomId = roomId;
                 message.senderId = msg.senderId || '';
@@ -260,14 +260,22 @@ export default class MessageRepository {
       .fetch();
       await database.write(async () => {
         if (localMessages.length > 0) {
+          // Cập nhật tin nhắn hiện có
           await localMessages[0].update(message => {
             message._id = serverMessage.id; 
-            message.senderId = serverMessage.senderId,
-            message.status = serverMessage.status || MessageViewStatus.SENT,
-            message.replyMessageId = serverMessage.replyMessageId
+            message.senderId = serverMessage.senderId;
+            message.status = serverMessage.status || MessageViewStatus.SENT;
+            message.replyMessageId = serverMessage.replyMessageId;
             message.updatedAt = Number(new Date(serverMessage.updatedAt));
-            message.createdAt = Number(new Date(serverMessage.createdAt))
-          });              
+            message.createdAt = Number(new Date(serverMessage.createdAt));
+          });
+          
+          // Đảm bảo rằng Observable sẽ phát hiện thay đổi
+          // Bằng cách cập nhật lại trường updatedAt
+          await localMessages[0].update(message => {
+            message.updatedAt = Date.now();
+          });
+          
         }
       })      
     } catch (error) {
@@ -306,7 +314,7 @@ export default class MessageRepository {
       
       // Ánh xạ dữ liệu vào MessageItemView
       const resultMessages: MessageItemView[] = limitedMessagesData.map(msg => ({
-        id: msg.id,
+        id: msg._id,
         content: msg.content,
         type: msg.type as MessageContentType,
         senderId: msg.sender_id,
