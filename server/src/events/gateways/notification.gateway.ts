@@ -109,7 +109,6 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
   }
 
-
   @OnEvent(EventEmitterKey.NEW_MESSAGE)
   async newMessage(data: NewMessageEvent) {
     try {
@@ -129,13 +128,12 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         );
         
         const msgAcks = new Map<Uuid, string>();
-        onlineUsersRoom.forEach((userId: Uuid) => msgAcks.set(userId  , msgDataStr));
+        onlineUsersRoom.forEach((userId: Uuid) => msgAcks.set(userId, msgDataStr));
         this.pendingAcks.set(msgId, msgAcks);
       }
 
       // Xử lý user offline (lưu tin nhắn) 
       if (offlineUsersRoom.length > 0) {
-        console.log(offlineUsersRoom);
         
         const mKeys = offlineUsersRoom.map((userId: Uuid) => createCacheKey(CacheKey.UNRECEIVE_MSG, userId));
         const mOldOffData = await this.redisService.mget(...mKeys);

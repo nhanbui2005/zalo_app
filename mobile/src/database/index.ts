@@ -7,6 +7,8 @@ import MemberModel from './models/MemberModel';
 import MessageModel from './models/MessageModel';
 import RoomModel from './models/RoomModel';
 import EmojiModel from './models/EmojiModel';
+import MediaModel from './models/MediaModel';
+import LinkMetadataModel from './models/LinkModel';
 
 const adapter = new SQLiteAdapter({
   schema: databaseSchema,
@@ -20,5 +22,5 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [UserModel, MemberModel, MessageModel, RoomModel, EmojiModel],
+  modelClasses: [UserModel, MemberModel, MessageModel, RoomModel, EmojiModel, MediaModel, LinkMetadataModel],
 });

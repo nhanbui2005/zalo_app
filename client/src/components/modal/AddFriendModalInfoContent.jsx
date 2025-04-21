@@ -36,9 +36,13 @@ export const AddFriendModalInfoContent = ({
 
   const sendRequestAddFriend = async () => {    
     try {
+      console.log('aaaaaaaaaaa');
+      
       const data = await relationAPI.sendRequestAddFriendAPI({
         receiverId: user.id
       })
+      console.log('dsataa', data);
+      
       setRelationId(data.id)
       setInviter('self')
       setStatus(data.status)

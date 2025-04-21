@@ -14,7 +14,7 @@ import { loginWithGoogle } from '~/features/auth/authService';
 import { loginGoogleRequest } from '~/features/auth/authDto';
 
 GoogleSignin.configure({
-  webClientId:'813157104392-t3rru3rluegqftrtov6sp82momi4s494.apps.googleusercontent.com'
+  webClientId:'38749006531-m1i9vad72j9f3o2r0j58jitsk90nrjjl.apps.googleusercontent.com'
 })
 
 const loginValidationSchema = Yup.object().shape({  

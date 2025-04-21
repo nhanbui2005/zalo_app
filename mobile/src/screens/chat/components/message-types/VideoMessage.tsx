@@ -5,28 +5,22 @@ import { colors } from '~/styles/Ui/colors';
 import { textStyle } from '~/styles/Ui/text';
 import { formatDuration } from '~/utils/formatUtils';
 import { MediaService } from '~/services/MediaService';
+import { MediaRes } from '~/features/message/dto/message.dto.parent';
 
 type VideoMessageProps = {
-  media?: {
-    _id: string;
-    name: string;
-    duration?: number;
-    preview_image?: string;
-  };
+  media: MediaRes;
 };
 
 const VideoMessage: React.FC<VideoMessageProps> = ({ media }) => {
   const handlePlay = () => {
-    if (media?._id) {
-      MediaService.getInstance().retryDownload(media._id);
-    }
+    MediaService.getInstance().retryDownload(media.id);
   };
 
   return (
     <View style={styles.videoContainer}>
-      {media?.preview_image ? (
+      {media.previewUrl ? (
         <Image 
-          source={{ uri: media.preview_image }}
+          source={{ uri: media.previewUrl }}
           style={styles.videoThumbnail}
         />
       ) : (
@@ -39,10 +33,10 @@ const VideoMessage: React.FC<VideoMessageProps> = ({ media }) => {
       )}
       <View style={styles.videoInfo}>
         <Text style={styles.videoName} numberOfLines={1}>
-          {media?.name || 'Video'}
+          {media.originalName || 'Video'}
         </Text>
         <Text style={styles.videoDuration}>
-          {media?.duration ? formatDuration(media.duration) : ''}
+          {media.duration ? formatDuration(media.duration) : ''}
         </Text>
       </View>
       <TouchableOpacity 
@@ -112,4 +106,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default VideoMessage; 
+export default VideoMessage;

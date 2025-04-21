@@ -31,22 +31,19 @@ import { MessagParente } from '~/features/message/dto/message.dto.nested';
 import ModalContent_MenuMessage from '~/components/Common/modal/content/ModelContent_MenuMessage';
 import { nanoid } from 'nanoid/non-secure';
 
-
 const ChatScreen: React.FC = () => {
   const mainNav = useNavigation<MainNavProp>();
   const currentRoomId = MMKVStore.getCurrentRoomId()
-  const currentMemberMyId = MMKVStore.getCurrentMemberMeId()  
   const {curentMessageRepling, clearData, setCurentMessageRepling} = useChatStore();
   const {currentPartnerId,setCurrentRoom} = useRoomStore();
   const [room, setRoom] = useState<Room>();
-  const [imageSelected, setImageSelected] = useState()
 
   const modalRef = useRef<UModalRef>(null);
   const replyMessageRef = useRef<ReplyMessageRef>(null);
   const messageSelectedRef = useRef<_MessageSentRes>();
   const inputText = useRef('');
   const isFocused = useIsFocused();
-
+  
   // Set chặn notifi khi ở chatscreen
   useEffect(() => {    
     if (isFocused) {
@@ -137,7 +134,7 @@ const ChatScreen: React.FC = () => {
         if (messageSelectedRef.current) {
           const replyMessage: MessagParente = {
             id: messageSelectedRef.current.id,
-            content: messageSelectedRef.current.content,
+            content: messageSelectedRef.current.content || '',
             sender: messageSelectedRef.current.sender || {
               id: '',
               msgRTime: new Date(),

@@ -1,4 +1,4 @@
-import { tableSchema, ColumnSchema } from '@nozbe/watermelondb';
+import { ColumnSchema, tableSchema } from "@nozbe/watermelondb";
 
 export const mediaConfig: {
   name: string;
@@ -7,20 +7,26 @@ export const mediaConfig: {
   name: 'medias',
   columns: [
     { name: '_id', type: 'string' },
-    { name: 'room_id', type: 'string' },
-    { name: 'msg_id', type: 'string' },
-    { name: 'name', type: 'string' },
-    { name: 'type', type: 'string' },
     { name: 'url', type: 'string' },
-    { name: 'local_path', type: 'string', isOptional: true },
-    { name: 'status', type: 'string' },
-    { name: 'call_status', type: 'string', isOptional: true },
-    { name: 'preview_image', type: 'string', isOptional: true },
+    { name: 'public_id', type: 'string' },
+    { name: 'format', type: 'string', isOptional: true },
+    { name: 'bytes', type: 'number', isOptional: true },
+    { name: 'width', type: 'number', isOptional: true },
+    { name: 'height', type: 'number', isOptional: true },
     { name: 'duration', type: 'number', isOptional: true },
-    { name: 'size', type: 'number', isOptional: true },
-    { name: 'download_progress', type: 'number' },
+    { name: 'preview_url', type: 'string', isOptional: true },
+    { name: 'original_name', type: 'string', isOptional: true },
+    { name: 'mime_type', type: 'string', isOptional: true },
+    { name: 'type', type: 'string', isOptional: true },
+    { name: 'message_id', type: 'string', isOptional: true, isIndexed: true },
+    { name: 'room_id', type: 'string', isOptional: true, isIndexed: true },
+    { name: 'user_id', type: 'string', isOptional: true, isIndexed: true },
+    { name: 'status', type: 'string', isOptional: true },
     { name: 'created_at', type: 'number' },
-    { name: 'metadata', type: 'string' }
+    { name: 'local_path', type: 'string' },
+
+    { name: 'download_progress', type: 'number', isOptional: true },
+    { name: 'error_message', type: 'string', isOptional: true },
   ]
 };
 export const MediaSchema = tableSchema(mediaConfig);

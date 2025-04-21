@@ -10,6 +10,8 @@ import SendAddFriendScreen from '~/screens/relation/SendAddFriendScreen';
 import HandleReqScreen from '~/screens/relation/HandleReqScreen';
 import OptionalFriendScreen from '~/screens/relation/OptionalFriendScreen';
 import {_MessageSentRes} from '~/features/message/dto/message.dto.parent';
+import PDFViewerScreen from '~/screens/chat/components/message-types/files/PDFViewerScreen';
+import FullScreenVideo from '~/screens/others/FullScreenVideo ';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
@@ -57,6 +59,16 @@ const MainNavigator = () => {
         component={OptionalFriendScreen}
         options={{headerShown: false}}
       />
+       <Stack.Screen
+        name="PDFViewerScreen"
+        component={PDFViewerScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen 
+        name="FullScreenVideo" 
+        component={FullScreenVideo} 
+        options={{ headerShown: false }} 
+        />
     </Stack.Navigator>
   );
 };

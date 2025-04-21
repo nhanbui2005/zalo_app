@@ -4,6 +4,8 @@ import { MessageSchema } from './MessageSchema';
 import { MemberSchema } from './MemberSchema';
 import { RoomSchema } from './RooomSchema';
 import { EmojiSchema } from './EmojiSchema';
+import { MediaSchema } from './MediaSchema';
+import { LinkSchema } from './LinkSchema';
 
 export const databaseSchema = appSchema({
   version: 1,
@@ -12,6 +14,8 @@ export const databaseSchema = appSchema({
     RoomSchema,
     MessageSchema,
     MemberSchema,
-    EmojiSchema
+    EmojiSchema,
+    MediaSchema,
+    LinkSchema
   ],
 });

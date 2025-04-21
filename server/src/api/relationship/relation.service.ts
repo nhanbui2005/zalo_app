@@ -16,7 +16,6 @@ import { ChatRoomService } from '../chat-room/chat-room.service';
 import { RoomResDto } from '../chat-room/dto/room.res.dto';
 import { UserResDto } from '../user/dto/user.res.dto';
 import { UserService } from '../user/user.service';
-import { MemberResDto } from './dto/member.res.dto';
 import { MemberEntity } from '../members/entities/member.entity';
 
 @Injectable()

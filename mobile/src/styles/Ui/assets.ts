@@ -1,3 +1,5 @@
+import { zip } from "rxjs";
+
 const uriIcons = '../../assets/icons/';
 const images = '../../assets/images/';
 
@@ -73,7 +75,23 @@ export const Assets = {
         facebook: require(uriIcons + 'facebook.png'),
 
         reply_message: require(uriIcons + 'reply-message.png'),
-        no_wifi: require(uriIcons+'no_wifi.png')
+        no_wifi: require(uriIcons+'no_wifi.png'),
+
+        //menu-chat
+        alam: require(uriIcons + 'alarm.png'),
+        business_card: require(uriIcons + 'business-cards.png'),
+        cash_back: require(uriIcons + 'cash-back.png'),
+        cloud: require(uriIcons + 'cloud.png'),
+        doc: require(uriIcons + 'doc.png'),
+        graph: require(uriIcons + 'graph.png'),
+        image: require(uriIcons + 'image.png'),
+        location: require(uriIcons + 'location.png'),
+        play: require(uriIcons + 'play.png'),
+        pause: require(uriIcons + 'pause.png'),
+        pdf: require(uriIcons + 'pdf.png'),
+        zip: require(uriIcons + 'zip.png'), 
+        //file
+        video: require(uriIcons + 'video.png'),
     },
     images: {
         demo: require(images + 'demo.jpg'),

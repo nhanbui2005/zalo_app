@@ -8,6 +8,7 @@ export const colors = {
     secondary_bright: '#0088FF',
     secondary_transparent: 'rgba(184, 212, 222, 0.4)',
     gray_light: '#DFE3E4',
+    gray_medium: '#C4CACE',
     gray_icon: '#727272',
     gray_weight: '#333333',
     gray: '#9EA5AD',

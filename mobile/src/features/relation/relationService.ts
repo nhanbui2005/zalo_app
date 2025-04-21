@@ -77,7 +77,7 @@ export const syncWhenAcceptRequest = async ({
           ? {
               id: `temp-${nanoid()}`,
               content: messageContent,
-              type: MessageContentType.TEXT,
+              type: MessageContentType.TEXT || 'text',
               status: MessageViewStatus.SENT,
               revoked: false,
               senderName: meId === requesterId ? 'Bạn' : handlerId,
@@ -87,7 +87,7 @@ export const syncWhenAcceptRequest = async ({
       };
 
       const preparedRooms = await roomRepo?.prepareRooms([roomData]);
-      const newRoom = preparedRooms[0];
+      const newRoom = preparedRooms[0];      
 
       const preparedMembers = await memberRepo.prepareMembers(
         [
@@ -108,7 +108,7 @@ export const syncWhenAcceptRequest = async ({
                 senderId: '',
                 replyMessageId: '',
                 roomId: roomData.id,
-                type: MessageContentType.TEXT,
+                type: MessageContentType.TEXT || 'text',
                 revoked: false,
                 createdAt: new Date(),
                 updatedAt: new Date(),

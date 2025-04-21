@@ -15,13 +15,12 @@ import {colors} from '~/styles/Ui/colors';
 import {iconSize} from '~/styles/Ui/icons';
 import {textStyle} from '~/styles/Ui/text';
 import * as ImagePicker from 'react-native-image-picker';
-
+import { _MessageSentReq } from '~/features/message/dto/message.dto.parent';
+import { useChatStore } from '~/stores/zustand/chat.store';
 interface ImagePickerPanelProps {
   onClose: () => void;
-  onImagesSelected?: (images: { uri: string; fileName: string; type: string }[]) => void;
   inputRef: React.RefObject<any>;
   handleAnimation: (text: string) => void;
-  roomId?: string;
 }
 
 interface ImageItem {
@@ -33,12 +32,10 @@ interface ImageItem {
 
 const ImagePickerPanel: React.FC<ImagePickerPanelProps> = ({
   onClose,
-  onImagesSelected,
   inputRef,
   handleAnimation,
-  roomId,
 }) => {
-  const [images, setImages] = useState<ImageItem[]>([]);
+  const { images, setImages } = useChatStore(); // Lấy từ store
   const [loading, setLoading] = useState(false);
   const [selectedCount, setSelectedCount] = useState(0);
 
@@ -49,38 +46,18 @@ const ImagePickerPanel: React.FC<ImagePickerPanelProps> = ({
         mediaType: 'photo',
         selectionLimit: 0,
         includeBase64: false,
-        quality: 0.8,
       });
 
       if (result.assets) {
-        const newImages = result.assets
-          .filter(asset => {
-            if (!asset.uri) {
-              console.error('Invalid image URI');
-              return false;
-            }
-
-            if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
-              console.error('Image too large:', asset.fileName);
-              return false;
-            }
-
-            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            if (asset.type && !validTypes.includes(asset.type)) {
-              console.error('Invalid image type:', asset.type);
-              return false;
-            }
-
-            return true;
-          })
-          .map(asset => ({
-            uri: asset.uri || '',
-            fileName: asset.fileName || `image_${Date.now()}.jpg`,
-            type: asset.type || 'image/jpeg',
-            selected: false,
-          }));
-
-        setImages(newImages);
+        const newImages = result.assets.map(asset => ({
+          uri: asset.uri || '',
+          fileName: asset.fileName || '',
+          type: asset.type || '',
+          selected: false,
+          with: asset.width || 0,
+          height: asset.height || 0
+        }));
+        setImages(newImages); // Cập nhật store
       }
     } catch (error) {
       console.error('Error loading images:', error);
@@ -96,24 +73,15 @@ const ImagePickerPanel: React.FC<ImagePickerPanelProps> = ({
   const toggleImageSelection = (index: number) => {
     const updatedImages = [...images];
     updatedImages[index].selected = !updatedImages[index].selected;
-    setImages(updatedImages);
-    
+    setImages(updatedImages); // Cập nhật store
+
     const newSelectedCount = updatedImages.filter(img => img.selected).length;
     setSelectedCount(newSelectedCount);
 
     if (newSelectedCount > 0) {
       handleAnimation('text');
-      if (onImagesSelected) {
-        const selectedImages = updatedImages
-          .filter(img => img.selected)
-          .map(({ uri, fileName, type }) => ({ uri, fileName, type }));
-        onImagesSelected(selectedImages);
-      }
     } else {
       handleAnimation('');
-      if (onImagesSelected) {
-        onImagesSelected([]);
-      }
     }
   };
 
@@ -138,7 +106,7 @@ const ImagePickerPanel: React.FC<ImagePickerPanelProps> = ({
   return (
     <View style={styles.imagePickerContainer}>
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.closeButton}
           onPress={() => {
             onClose();
@@ -162,7 +130,7 @@ const ImagePickerPanel: React.FC<ImagePickerPanelProps> = ({
         <FlatList
           data={images}
           renderItem={renderImageItem}
-          keyExtractor={(item, index) => `${item.uri}-${index}`}
+          keyExtractor={(item, index) => index.toString()}
           numColumns={3}
           contentContainerStyle={styles.imageList}
         />
@@ -200,6 +168,17 @@ const styles = StyleSheet.create({
   subtitle: {
     ...textStyle.body_sm,
     color: colors.gray,
+  },
+  sendButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginLeft: 8,
+  },
+  sendButtonText: {
+    color: colors.white,
+    fontWeight: 'bold',
   },
   imageList: {
     padding: 4,

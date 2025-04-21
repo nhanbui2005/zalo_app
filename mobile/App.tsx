@@ -19,7 +19,6 @@ import NetInfo from '@react-native-community/netinfo';
 import {startBackgroundSocketTask} from '~/backgroundSocketManager';
 import {keyMMKVStore, MMKVStore, storage} from '~/utils/storage';
 import MemberRepository from '~/database/repositories/MemberRepository';
-import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 
 const App = () => {
   const {accessToken} = useAuthSelector(authSelector);
@@ -61,12 +60,13 @@ const App = () => {
 
         if (auth) {
           const parsedAuth = JSON.parse(auth);
+          console.log('....', parsedAuth.accessToken);
+
           setAuthorizationToken(parsedAuth.accessToken);
           dispatch(setAuth(parsedAuth));
         }
         if (me) {
           const parsedMe = JSON.parse(me);
-
           dispatch(setMe(parsedMe));
           storage.set(keyMMKVStore.USER_ID, parsedMe.id);
         } else if (accessToken && !meData) {

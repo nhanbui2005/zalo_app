@@ -16,16 +16,13 @@ import EmojiList from './EmojiList';
 import {useSocket} from '~/socket/SocketProvider';
 import {useChatStore} from '~/stores/zustand/chat.store';
 import {_MessageSentReq} from '~/features/message/dto/message.dto.parent';
-import MessageRepository from '~/database/repositories/MessageRepository';
-import RoomRepository from '~/database/repositories/RoomRepository';
-import {MessageService} from '~/features/message/messageService';
 import {useAppSelector} from '~/stores/redux/store';
 import {appSelector} from '~/features/app/appSlice';
-import {MessageContentType} from '~/features/message/dto/message.enum';
 import MemberRepository from '~/database/repositories/MemberRepository';
 import { MMKVStore } from '~/utils/storage';
 import MenuList from './Menulist';
 import ImagePickerPanel from './ImagePickerPanel';
+import VoiceRecorder from './voice/VoiceRecorder';
 
 interface BottomSheetProps {
   roomId: string;
@@ -41,17 +38,15 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
     const currentRoomId = MMKVStore.getCurrentRoomId();
     const {emit} = useSocket();
     const {meData} = useAppSelector(appSelector);
+    const {sendMessage} = useChatStore()
     const {curentMessageRepling, setCurentMessageRepling} = useChatStore();
     const [text, setText] = useState('');
     const [keyboard, setKeyboard] = useState(false);
     const [activeComponent, setActiveComponent] = useState<ActiveComponent>(null);
     const [isWriting, setIsWriting] = useState(false);
-    const [images, setImages] = useState<{ uri: string; fileName: string; type: string; selected: boolean }[]>([]);
-
     const scaleIcons = useRef(new Animated.Value(1)).current;
     const scaleSend = useRef(new Animated.Value(0)).current;
-    const roomRepo = RoomRepository.getInstance()
-    const messageRepo = MessageRepository.getInstance()
+
 
     useEffect(() => {
       if (!currentMemberMyId && meData) {
@@ -59,7 +54,6 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
           try {
             const memberRepo = MemberRepository.getInstance();
             const id = await memberRepo.getMemberMeId(currentRoomId, meData?.id);
-            console.log('lấy tu');
             
             if (id) {
               MMKVStore.setCurrentMemberMeId(id);
@@ -121,19 +115,6 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
       }
     }, [keyboard]);
 
-    const handleImagesSelected = useCallback((selectedImages: { uri: string; fileName: string; type: string }[]) => {
-      const updatedImages = selectedImages.map(img => ({
-        ...img,
-        selected: true
-      }));
-      setImages(updatedImages);
-      
-      if (updatedImages.length > 0) {
-        handleAnimation('text');
-      }
-      
-    }, []);
-
     const renderComponent = () => {      
       switch (activeComponent) {
         case 'emojis':
@@ -141,16 +122,14 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
         case 'menu':
           return <MenuList/>;
         case 'mic':
-          return <View style={{flex: 1, borderBlockColor: 'red'}}><Text>Mic Panel</Text></View>;
+          return <VoiceRecorder/>;
         case 'image':
           return (
             <ImagePickerPanel
-              roomId={currentRoomId}
               onClose={() => {
                 setActiveComponent(null);
                 handleAnimation('');
               }}
-              onImagesSelected={handleImagesSelected}
               inputRef={inputRef}
               handleAnimation={handleAnimation}
             />
@@ -185,59 +164,13 @@ const BottomSheetComponent: React.FC<BottomSheetProps> = memo(
       onTextChange(newText);
       handleAnimation(newText);
     }, []);
-    const handleSendMessage = async () => {      
+    const handleSendMessage = async () => {                
       if (roomId && meData) {
-        if (activeComponent === 'image' && images.length > 0) {
-          try {
-            // Gửi ảnh            
-            for (const image of images) {
-              if (!image.uri) {
-                console.error('Invalid image URI');
-                continue;
-              }
-
-              const dto: _MessageSentReq = {
-                roomId: roomId,
-                content: '',
-                contentType: MessageContentType.IMAGE,
-                replyMessageId: curentMessageRepling?.id,
-              };
-              
-              try {
-                await MessageService.SentMessageMedia(
-                  dto, 
-                  currentMemberMyId, 
-                  { name: image.fileName, size: 0 },
-                  roomRepo, 
-                  messageRepo,
-                  { uri: image.uri, type: image.type, name: image.fileName }
-                );
-              } catch (error) {
-                console.error('Error sending image:', error);
-                // Continue with next image even if one fails
-              }
-            }
-            
-            setImages([]);
-            setActiveComponent(null);
-          } catch (error) {
-            console.error('Error in handleSendMessage:', error);
-          }
-        } else if (text.trim()) {
-          // Gửi tin nhắn text
-          const dto: _MessageSentReq = {
-            roomId: roomId,
-            content: text.trim(),
-            contentType: MessageContentType.TEXT,
-            replyMessageId: curentMessageRepling?.id,
-          };
-
-          setText('');
-          handleAnimation('');
-          setCurentMessageRepling(null);
-          
-          await MessageService.SentMessageText(dto, currentMemberMyId, roomRepo, messageRepo);
-        }
+        setText('');
+        handleAnimation('');
+        setActiveComponent(null);
+        setCurentMessageRepling(null);
+        await sendMessage(roomId, currentMemberMyId, text); 
       }
     };
 

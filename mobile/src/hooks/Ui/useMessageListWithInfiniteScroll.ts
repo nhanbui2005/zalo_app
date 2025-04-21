@@ -4,9 +4,10 @@ import UserRepository from "~/database/repositories/UserRepository";
 import { CursorPaginatedRes, PageOptionsDto } from "~/features/common/pagination/paginationDto";
 import { useChatStore } from "~/stores/zustand/chat.store";
 import { MessageItemDisplay, MessageItemView } from "~/database/types/message.type";
-import { MessageSource, MessageViewStatus } from "~/features/message/dto/message.enum";
+import { MessageContentType, MessageSource, MessageViewStatus } from "~/features/message/dto/message.enum";
 import { UserItemBaseView } from "~/database/types/user.typee";
 import { MMKVStore } from "~/utils/storage";
+import { useIsFocused } from "@react-navigation/native";
 
 export const useMessageListWithInfiniteScroll = () => {
   const userRepo = UserRepository.getInstance();
@@ -14,7 +15,7 @@ export const useMessageListWithInfiniteScroll = () => {
 
   const currentMemberMyId = MMKVStore.getCurrentMemberMeId();
   const currentRoomId = MMKVStore.getCurrentRoomId();
-
+  const isFocused = useIsFocused();
   const { curentPagination, setPagination } = useChatStore();
   const [originalMessages, setOriginalMessages] = useState<MessageItemView[]>([]); 
   const [messages, setMessages] = useState<MessageItemDisplay[]>([]); 
@@ -55,9 +56,15 @@ export const useMessageListWithInfiniteScroll = () => {
           isDisplayAvatar: !message.isSelfSent && (messageBefore?.isSelfSent),
           isDisplayStatus: message.isSelfSent && index === 0,
           isDisplayTime: 
+          message.type == MessageContentType.TEXT &&(
           (!message.isSelfSent && messageNext && messageNext.isSelfSent) ||
           (message?.isSelfSent && messageNext && !messageNext?.isSelfSent) ||
-          index === 0,
+          index === 0),
+          isDisplayTimeBox: 
+          message.type != MessageContentType.TEXT &&(
+            (!message.isSelfSent && messageNext && messageNext.isSelfSent) ||
+            (message?.isSelfSent && messageNext && !messageNext?.isSelfSent) ||
+            index === 0),
           isDisplayHeart: (!message.isSelfSent && messageNext && messageNext.isSelfSent),
         };
       });
@@ -93,6 +100,7 @@ export const useMessageListWithInfiniteScroll = () => {
           curentPagination.beforeCursor
         );
         const subscription = observable.subscribe((newMessages) => {
+          
           setOriginalMessages((prev) => {            
             // Thay vì lọc tin nhắn mới, chúng ta sẽ thay thế toàn bộ danh sách
             // để đảm bảo rằng các thay đổi ID được phát hiện
@@ -129,7 +137,8 @@ export const useMessageListWithInfiniteScroll = () => {
       const result: CursorPaginatedRes<MessageItemView> = await messageRepo.getMessages(
         currentRoomId,
         pagination,
-        messageRepo
+        messageRepo,
+        userMaps,
       );
 
       if (result.data.length > 0) {

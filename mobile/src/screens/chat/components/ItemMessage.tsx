@@ -14,28 +14,22 @@ import {Assets} from '../../../styles/Ui/assets';
 import {iconSize} from '../../../styles/Ui/icons';
 import {textStyle} from '../../../styles/Ui/text';
 import AnimatedEmojis from './bottomSheet/AnimatedEmojis';
-import { MessageContentType, MessageViewStatus } from '~/features/message/dto/message.enum';
-import { _MessageSentReq, _MessageSentRes } from '~/features/message/dto/message.dto.parent';
-import { Fonts } from '~/styles/Ui/fonts';
-import { MessageItemDisplay } from '~/database/types/message.type';
-import { useRoomStore } from '~/stores/zustand/room.store';
-import ImageMessage from './ImageMessage';
-import { formatFileSize, formatDuration } from '~/utils/formatUtils';
-import { MediaService } from '~/services/MediaService';
-import FileMessage from './message-types/FileMessage';
-import VideoMessage from './message-types/VideoMessage';
+import {
+  MessageContentType,
+  MessageViewStatus,
+} from '~/features/message/dto/message.enum';
+import {
+  _MessageSentReq,
+  _MessageSentRes,
+} from '~/features/message/dto/message.dto.parent';
+import {Fonts} from '~/styles/Ui/fonts';
+import {MessageItemDisplay} from '~/database/types/message.type';
+import {useRoomStore} from '~/stores/zustand/room.store';
+import {resolveMessageComponent} from '../components/message-types/files/MessageTypeResolver';
 
 // Định nghĩa Props cho ItemMessage
 type Props = {
-  message: MessageItemDisplay & {
-    media?: {
-      _id: string;
-      name: string;
-      size?: number;
-      duration?: number;
-      preview_image?: string;
-    };
-  };
+  message: MessageItemDisplay;
   onLongPress?: (pageY: number) => void;
 };
 
@@ -51,7 +45,7 @@ const getUniqueId = () => {
   return Math.floor(Math.random() * Date.now()).toString();
 };
 
-const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
+const ItemMessage: React.FC<Props> = React.memo(({message, onLongPress}) => {
   // Destructure các thuộc tính từ message
   const {
     id,
@@ -60,26 +54,32 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
     replyMessageId,
     source,
     sender,
-    type, 
+    type,
+    media,
     emojis,
     createdAt,
     isSelfSent,
     isDisplayTime,
     isDisplayHeart,
     isDisplayAvatar,
+    isDisplayTimeBox,
     isDisplayStatus,
   } = message;
 
-  const {currentRoom} = useRoomStore()
-  const containerStyle = source == 'system' ? styles.systemContainer : 
-  (isSelfSent ? styles.meContainer : styles.peopleContainer);
+  const {currentRoom} = useRoomStore();
+  const containerStyle =
+    source == 'system'
+      ? styles.systemContainer
+      : isSelfSent
+      ? styles.meContainer
+      : styles.peopleContainer;
 
-  const messageSystemAccetp = (message.content && !message.senderId)
+  const messageSystemAccetp = message.content && !message.senderId;
 
   const textStyles = isSelfSent ? styles.meText : styles.peopleText;
 
   const [emojisAnimated, setEmojisAnimated] = useState<
-    { id: string; emoji: string }[]
+    {id: string; emoji: string}[]
   >([]);
   const [emojiCount, setEmojiCount] = useState(0);
   const emojisCountAnimatedValue = useRef(new Animated.Value(0)).current;
@@ -87,11 +87,11 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
   const itemRef = useRef<View>(null);
 
   const handleEmojiPress = (emoji: string) => {
-    setEmojiCount((prevCount) => prevCount + 1);
+    setEmojiCount(prevCount => prevCount + 1);
 
-    setEmojisAnimated((prevEmojis) => [
+    setEmojisAnimated(prevEmojis => [
       ...prevEmojis,
-      { id: getUniqueId(), emoji: emoji },
+      {id: getUniqueId(), emoji: emoji},
     ]);
 
     if (emojiTimeout.current) {
@@ -114,8 +114,8 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
   };
 
   const handleAnimationComplete = useCallback((id: string) => {
-    setEmojisAnimated((oldEmoji) =>
-      [...oldEmoji].filter((emoji) => emoji.id !== id)
+    setEmojisAnimated(oldEmoji =>
+      [...oldEmoji].filter(emoji => emoji.id !== id),
     );
   }, []);
 
@@ -129,192 +129,208 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
     }
   };
 
-  const renderMessageByType = (type: MessageContentType, content: string) => {
-    switch (type) {
-      case 'text':
-        return <Text style={styles.messageText}>{content}</Text>;
-      case 'image':
-        return <ImageMessage message={message} />;
-      case 'file':
-        return <FileMessage media={message.media} />;
-      case 'video':
-        return <VideoMessage media={message.media} />;
-      default:
-        return <Text>Loại tin nhắn không xác định</Text>;
-    }
-  };
-
   // Giả định replyMessage (nếu có replyMessageId, cần lấy dữ liệu từ đâu đó)
+  const isText = message.type == MessageContentType.TEXT
   const replyMessage = replyMessageId
-    ? { id: replyMessageId, content: 'Reply content', sender: { user: { username: 'User' } } }
+    ? {
+        id: replyMessageId,
+        content: 'Reply content',
+        sender: {user: {username: 'User'}},
+      }
     : undefined;
-    
+
   return (
     <>
-     {messageSystemAccetp ? 
-      <View style = {[styles.messageAccepct, styles.systemContainer]}>
-        <Image style = {imagesStyle.avatar_small} source={{uri: currentRoom?.roomAvatar}}/>
-        <Text style={textStyle.body_sm}>{currentRoom?.roomName} { message.content}</Text>
-      </View>
-      : 
-      <Pressable key={id} ref={itemRef} onLongPress={handleLongPress}>
-      <View
-        style={[
-          containerStyle,
-          styles.messageContainer,
-          emojis && emojis?.length > 0 && { marginBottom: 30 },
-        ]}
-      >
-        <View
-          style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}
-        >
-          {/* Avatar */}
-          {isDisplayAvatar && (
-            <Image
-              style={styles.avatar}
-              source={
-                sender?.avatarUrl
-                  ? { uri: sender.avatarUrl }
-                  : Assets.images.demo
-              }
-            />
-          )}
-          <View style={styles.textContainer}>
-            {replyMessage && (
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                <View
-                  style={{
-                    backgroundColor: colors.secondary_bright,
-                    width: 3,
-                    height: '100%',
-                    borderRadius: 10,
-                  }}
-                />
-                <View>
-                  <Text
-                    style={[
-                      textStyle.body_sm,
-                      {
-                        padding: 0,
-                        fontFamily: Fonts.proximaNova.regular,
-                        fontWeight: 'bold',
-                      },
-                    ]}
-                  >
-                    {replyMessage.sender.user.username}
-                  </Text>
-                  <Text
-                    style={[textStyle.body_sm, { color: colors.gray_icon }]}
-                  >
-                    {replyMessage.content}
-                  </Text>
-                </View>
-              </View>
-            )}
-            {/* Nội dung tin nhắn */}
-            {renderMessageByType(type, content)}
-            {/* Time */}
-            {isDisplayTime && (
-              <Text
-                style={[
-                  textStyle.body_xs,
-                  {
-                    // color: source === 'time' ? colors.white : colors.gray,
-                  },
-                ]}
-              >
-                {createdAt
-                  ? new Date(createdAt).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : 'N/A'}
-              </Text>
-            )}
-            {/* Hiển thị emoji */}
-            <Pressable
-              onPress={() => {
-                if (emojis && emojis.length > 0) {
-                  const lastEmoji = emojis[emojis.length - 1];
-                  handleEmojiPress(lastEmoji.split('_')[1]);
-                } else {
-                  handleEmojiPress('❤️');
-                }
-              }}
-            >
-              {emojis && emojis.length > 0 ? (
-                <Text style={[styles.emoji, { fontSize: 11 }]}>
-                  {emojis[emojis.length - 1].split('_')[1]}
-                </Text>
-              ) : (
-                isDisplayHeart && (
-                  <View style={styles.emoji}>
-                    {emojiCount > 0 ? (
-                      <Text style={[{ fontSize: 11 }]}>❤️</Text>
-                    ) : (
-                      <Image
-                        style={iconSize.small}
-                        source={Assets.icons.heart_gray}
-                      />
-                    )}
-                  </View>
-                )
-              )}
-            </Pressable>
-
-            {/* Hiển thị danh sách emoji */}
-            {emojis && emojis.length > 0 && (
-              <Pressable style={styles.emojis}>
-                {emojis.map((emoji, index) => (
-                  <Text key={index}>{emoji}</Text>
-                ))}
-              </Pressable>
-            )}
-
-            {/* Count */}
-            {(emojis && emojis.length > 0) || isDisplayHeart ? (
-              <Animated.View
-                style={[
-                  styles.countContainer,
-                  {
-                    transform: [
-                      { translateY: emojisCountAnimatedValue },
-                      {
-                        scale: emojisCountAnimatedValue.interpolate({
-                          inputRange: [-80, 0],
-                          outputRange: [1, 0],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <Text style={[textStyle.titleText, { fontSize: 10 }]}>
-                  {emojiCount}
-                </Text>
-              </Animated.View>
-            ) : null}
-
-            {emojisAnimated.map((emoji) => (
-              <AnimatedEmojis
-                key={emoji.id}
-                id={emoji.id}
-                emoji={emoji.emoji}
-                onCompleteAnimation={handleAnimationComplete}
-              />
-            ))}
-          </View>
-        </View>
-      </View>
-      {isDisplayStatus && (
-        <View style={{ alignSelf: 'flex-end' }}>
-          <Text style={styles.status}>
-            {`✓ ${StatusString[status]}`}
+      {messageSystemAccetp ? (
+        <View style={[styles.messageAccepct, styles.systemContainer]}>
+          <Image
+            style={imagesStyle.avatar_small}
+            source={{uri: currentRoom?.roomAvatar}}
+          />
+          <Text style={textStyle.body_sm}>
+            {currentRoom?.roomName} {message.content}
           </Text>
         </View>
+      ) : (
+        <Pressable key={id} ref={itemRef} onLongPress={handleLongPress}>
+          <View
+            style={[
+              {paddingVertical: type === MessageContentType.TEXT ? 8 : 0},
+              containerStyle,
+              styles.messageContainer,
+              emojis && emojis?.length > 0 && {marginBottom: 30},
+            ]}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                width: '100%',
+              }}>
+              {/* Avatar */}
+              {isDisplayAvatar && (
+                <Image
+                  style={styles.avatar}
+                  source={
+                    sender?.avatarUrl
+                      ? {uri: sender.avatarUrl}
+                      : Assets.images.demo
+                  }
+                />
+              )}
+              <View style={styles.textContainer}>
+                {replyMessage && (
+                  <View style={{flexDirection: 'row', gap: 6}}>
+                    <View
+                      style={{
+                        backgroundColor: colors.secondary_bright,
+                        width: 3,
+                        height: '100%',
+                        borderRadius: 10,
+                      }}
+                    />
+                    <View>
+                      <Text
+                        style={[
+                          textStyle.body_sm,
+                          {
+                            fontFamily: Fonts.proximaNova.regular,
+                            fontWeight: 'bold',
+                          },
+                        ]}>
+                        {replyMessage.sender.user.username}
+                      </Text>
+                      <Text
+                        style={[textStyle.body_sm, {color: colors.gray_icon}]}>
+                        {replyMessage.content}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+                {/* Nội dung tin nhắn */}
+                {resolveMessageComponent(message)}
+                {/* Time */}
+                {isDisplayTime && (
+                  <Text
+                    style={[
+                      textStyle.body_xs,
+                      {
+                        // color: source === 'time' ? colors.white : colors.gray,
+                      },
+                    ]}>
+                    {createdAt
+                      ? new Date(createdAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'N/A'}
+                  </Text>
+                )}
+                {/* Hiển thị emoji */}
+                <Pressable
+                  onPress={() => {
+                    if (emojis && emojis.length > 0) {
+                      const lastEmoji = emojis[emojis.length - 1];
+                      handleEmojiPress(lastEmoji.split('_')[1]);
+                    } else {
+                      handleEmojiPress('❤️');
+                    }
+                  }}>
+                  {emojis && emojis.length > 0 ? (
+                    <Text style={[styles.emoji, {fontSize: 11}]}>
+                      {emojis[emojis.length - 1].split('_')[1]}
+                    </Text>
+                  ) : (
+                    isDisplayHeart && (
+                      <View style={styles.emoji}>
+                        {emojiCount > 0 ? (
+                          <Text style={[{fontSize: 11}]}>❤️</Text>
+                        ) : (
+                          <Image
+                            style={iconSize.small}
+                            source={Assets.icons.heart_gray}
+                          />
+                        )}
+                      </View>
+                    )
+                  )}
+                </Pressable>
+
+                {/* Hiển thị danh sách emoji */}
+                {emojis && emojis.length > 0 && (
+                  <Pressable style={styles.emojis}>
+                    {emojis.map((emoji, index) => (
+                      <Text key={index}>{emoji}</Text>
+                    ))}
+                  </Pressable>
+                )}
+
+                {/* Count */}
+                {(emojis && emojis.length > 0) || isDisplayHeart ? (
+                  <Animated.View
+                    style={[
+                      styles.countContainer,
+                      {
+                        transform: [
+                          {translateY: emojisCountAnimatedValue},
+                          {
+                            scale: emojisCountAnimatedValue.interpolate({
+                              inputRange: [-80, 0],
+                              outputRange: [1, 0],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}>
+                    <Text style={[textStyle.titleText, {fontSize: 10}]}>
+                      {emojiCount}
+                    </Text>
+                  </Animated.View>
+                ) : null}
+
+                {emojisAnimated.map(emoji => (
+                  <AnimatedEmojis
+                    key={emoji.id}
+                    id={emoji.id}
+                    emoji={emoji.emoji}
+                    onCompleteAnimation={handleAnimationComplete}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
+         
+          {isDisplayTimeBox &&
+          <Text
+          style={[
+            textStyle.body_xs,
+            {
+              bottom: 5,
+              right: -165,
+              color: 'white',
+              backgroundColor: colors.gray_medium,
+              maxWidth: 40, 
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+              borderRadius: 10,
+            },
+          ]}
+        >
+          {message.createdAt
+            ? new Date(message.createdAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : 'N/A'}
+        </Text>
+        
+          }
+           {isDisplayStatus && (
+            <View style={{alignSelf: 'flex-end'}}>
+              <Text style={styles.status}>{`✓ ${StatusString[status]}`}</Text>
+            </View>
+          )}
+        </Pressable>
       )}
-     </Pressable>
-     }
     </>
   );
 });
@@ -322,7 +338,6 @@ const ItemMessage: React.FC<Props> = React.memo(({ message, onLongPress }) => {
 const styles = StyleSheet.create({
   messageContainer: {
     borderRadius: 10,
-    paddingHorizontal: 8,
     marginBottom: 8,
   },
   countContainer: {
@@ -338,20 +353,20 @@ const styles = StyleSheet.create({
   },
   messageAccepct: {
     flexDirection: 'row',
-    alignItems: 'center', 
-    backgroundColor: colors.white, 
-    padding: 8, 
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    padding: 8,
     margin: 50,
-    paddingHorizontal:10,
+    paddingHorizontal: 10,
     gap: 8,
-    borderRadius: 20,  
-    maxWidth: '90%', 
-    alignSelf: 'flex-start', 
+    borderRadius: 20,
+    maxWidth: '90%',
+    alignSelf: 'flex-start',
   },
   messageText: {
     ...textStyle.body_md,
     textAlign: 'left',
-    paddingVertical: 4
+    paddingHorizontal: 8,
   },
   countText: {
     color: colors.white,
@@ -388,10 +403,10 @@ const styles = StyleSheet.create({
   },
 
   meContainer: {
+    paddingHorizontal: 5,
     backgroundColor: colors.secondary_transparent,
     justifyContent: 'center',
     alignSelf: 'flex-end',
-    paddingVertical: 8,
   },
   systemContainer: {
     backgroundColor: colors.white,
@@ -404,10 +419,10 @@ const styles = StyleSheet.create({
 
   peopleContainer: {
     marginLeft: 40,
+    paddingHorizontal: 5,
     backgroundColor: colors.white,
     justifyContent: 'center',
     alignSelf: 'flex-start',
-    paddingVertical: 8,
   },
   peopleText: {
     color: colors.black,
@@ -542,7 +557,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    transform: [{ translateX: -25 }, { translateY: -25 }],
+    transform: [{translateX: -25}, {translateY: -25}],
     width: 50,
     height: 50,
     borderRadius: 25,

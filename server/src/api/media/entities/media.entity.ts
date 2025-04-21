@@ -2,6 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 't
 import { Uuid } from '@/common/types/common.type';
 import { MessageEntity } from '../../message/entities/message.entity';
 import { AbstractEntity } from '@/database/entities/abstract.entity';
+import { ChatRoomEntity } from '@/api/chat-room/entities/chat-room.entity';
 
 @Entity('media')
 export class MediaEntity extends AbstractEntity {
@@ -44,7 +45,14 @@ export class MediaEntity extends AbstractEntity {
   @Column({ nullable: true })
   messageId: string;
 
+  @Column({ nullable: true })
+  roomId: string;
+
   @ManyToOne(() => MessageEntity, { nullable: true })
   @JoinColumn({ name: 'messageId' })
   message: MessageEntity;
+
+  @ManyToOne(() => ChatRoomEntity, { nullable: true })
+  @JoinColumn({ name: 'roomId' })
+  room: ChatRoomEntity;
 } 

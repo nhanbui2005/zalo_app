@@ -9,7 +9,7 @@ export class SendMessageReqDto {
   @UUIDFieldOptional()
   roomId?: Uuid
 
-  @StringFieldOptional({maxLength:100})
+  @StringFieldOptional()
   content?: string
 
   @UUIDFieldOptional()

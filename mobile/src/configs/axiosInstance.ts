@@ -11,7 +11,7 @@ import localStorage from '~/utils/localStorage';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -30,6 +30,10 @@ axiosInstance.interceptors.request.use(
       config.headers['Authorization'] = `Bearer ${accessToken}`;
     }else{
       config.headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+
+    if (config.data instanceof FormData) {
+      config.headers['Content-Type'] = 'multipart/form-data';
     }
     return config;
   },

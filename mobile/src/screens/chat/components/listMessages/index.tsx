@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, FlatList, ActivityIndicator } from 'react-native';
 import { UModalRef } from '~/components/Common/modal/UModal';
 import UModal from '~/components/Common/modal/UModal';
@@ -6,6 +6,7 @@ import { useMessageListWithInfiniteScroll } from '~/hooks/Ui/useMessageListWithI
 import ItemMessage from '../ItemMessage';
 import { _MessageSentRes } from '~/features/message/dto/message.dto.parent';
 import { MessageItemDisplay } from '~/database/types/message.type';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Props {
   onLongItemPress?: (pageY: number, message: MessageItemDisplay) => void;
@@ -14,8 +15,16 @@ interface Props {
 const MessageListView: React.FC<Props> = ({ onLongItemPress }) => {
   const modalRef = useRef<UModalRef>(null);
   const { messages, isLoading, loadMoreMessages, hasMore } = useMessageListWithInfiniteScroll();  
+// console.log('....', messages);
+useFocusEffect(
+  useCallback(() => {
+    
+    loadMoreMessages()
+    
+  }, [])
+);
 
-  return (
+  return (  
     <View style={styles.container}>
       <Text style={styles.header}>Danh sách phòng</Text>
       {isLoading && messages.length === 0 ? (
@@ -27,7 +36,7 @@ const MessageListView: React.FC<Props> = ({ onLongItemPress }) => {
           initialNumToRender={20}
           onEndReached={hasMore ? () => loadMoreMessages() : undefined}
           onEndReachedThreshold={0.4}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => `${item.id}-${index}`} 
           contentContainerStyle={{ paddingHorizontal: 10 }}
           renderItem={({ item }) => (
             <ItemMessage
@@ -46,6 +55,6 @@ export default MessageListView;
 
 const styles = StyleSheet.create({
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { flex: 1 },
+  container: { flex: 1, paddingLeft: 10 },
   header: { fontSize: 20, fontWeight: 'bold', margin: 10 },
 });

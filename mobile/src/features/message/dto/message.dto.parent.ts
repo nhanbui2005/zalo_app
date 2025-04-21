@@ -4,7 +4,7 @@ import { MessageContentType } from './message.enum';
 
 export interface _MessageSentReq {
   roomId: string;
-  content: string;
+  content?: string;
   contentType: MessageContentType;
   replyMessageId?: string;
  
@@ -22,5 +22,26 @@ export interface _MessageSentRes
   createdAt: Date;
   updatedAt: Date;
   onlineUsersRoom: string[];
-  offlineUsersRoom: string[]
+  offlineUsersRoom: string[];
+  media?: MediaRes[];
+}
+
+export interface MediaRes {
+  id: string;
+  url: string;
+  publicId: string;
+  format?: string;
+  bytes?: number;
+  width?: number;
+  height?: number;
+  duration?: number;
+  previewUrl?: string;
+  originalName?: string;
+  mimeType?: string;
+  type?: string;
+  localPath: string;
+  messageId?: string;
+  roomId?: string,
+  createdAt: string; 
+  updatedAt: string;
 }

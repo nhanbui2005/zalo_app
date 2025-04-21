@@ -1,5 +1,5 @@
 export enum MessageContentType {
-  TEXT = 'text',
+  TEXT = "text",
   IMAGE = 'image',
   VIDEO = 'video',
   VOICE = 'voice',

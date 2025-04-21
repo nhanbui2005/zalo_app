@@ -1,129 +1,188 @@
 import { database } from '../database';
 import MediaModel from '../database/models/MediaModel';
 import RNFS from 'react-native-fs';
-import { Platform } from 'react-native';
+import { MediaStatus } from '~/database/types/media.types';
+import { MediaRes } from '~/features/message/dto/message.dto.parent';
+import axios from 'axios';
+import { API_KEY, YOUTUBE_API_URL } from '~/utils/enviroment';
+import { LinkMetadata } from '~/database/repositories/LinkRepository';
 
 export class MediaService {
   private static instance: MediaService;
-  private mediaCollection = database.get<MediaModel>('medias');
-  private downloadQueue: Map<string, Promise<void>> = new Map();
+  private readonly mediaCollection = database.get<MediaModel>('medias');
+  private readonly downloadQueue: Map<string, Promise<void>> = new Map();
 
+  // Constructor private để áp dụng Singleton pattern
   private constructor() {}
 
-  static getInstance(): MediaService {
+  // Singleton: Lấy instance duy nhất
+  public static getInstance(): MediaService {
     if (!MediaService.instance) {
       MediaService.instance = new MediaService();
     }
     return MediaService.instance;
   }
 
-  async handleNewMedia(mediaData: {
-    _id: string;
-    room_id: string;
-    msg_id: string;
-    name: string;
-    type: string;
-    url: string;
-    size?: number;
-    duration?: number;
-    preview_image?: string;
-    metadata?: any;
-  }) {
+  // Xử lý media mới
+  public async handleNewMedia(mediaData: MediaRes): Promise<MediaModel> {
     try {
-      // Kiểm tra xem media đã tồn tại chưa
-      const existingMedia = await this.mediaCollection.find(mediaData._id);
-      if (existingMedia) {
-        return existingMedia;
+      // Kiểm tra media đã tồn tại
+      let media: MediaModel;
+      try {
+        media = await this.mediaCollection.find(mediaData.id);
+        return media; // Trả về nếu đã tồn tại
+      } catch (error) {
+        // Không tìm thấy, tiếp tục tạo mới
       }
 
-      // Tạo media mới
-      const media = await this.mediaCollection.create(record => {
-        record._id = mediaData._id;
-        record.roomId = mediaData.room_id;
-        record.msgId = mediaData.msg_id;
-        record.name = mediaData.name;
-        record.type = mediaData.type;
-        record.url = mediaData.url;
-        record.size = mediaData.size || null;
-        record.duration = mediaData.duration || null;
-        record.image = mediaData.preview_image || null;
-        record.metadata = mediaData.metadata || {};
-        record.status = 'pending';
-        record.downloadProgress = 0;
-        record.createdAt = Date.now();
+      // Tạo media mới trong transaction
+      media = await database.write(async () => {
+        return this.mediaCollection.create(record => {
+          record._id = mediaData.id;
+          record.roomId = mediaData.roomId ?? ''; 
+          record.messageId = mediaData.messageId ?? ''; 
+          record.originalName = mediaData.originalName ?? 'unnamed_file';
+          record.type = mediaData.type ?? 'unknown'; 
+          record.url = mediaData.url;
+          record.publicId = mediaData.publicId; 
+          record.format = mediaData.format ?? '';
+          record.bytes = mediaData.bytes ?? 0; 
+          record.width = mediaData.width ?? 0;
+          record.height = mediaData.height ?? 0;
+          record.duration = mediaData.duration ?? 0;
+          record.previewUrl = mediaData.previewUrl ?? ''; 
+          record.mimeType = mediaData.mimeType ?? ''; 
+          record.status = MediaStatus.PENDING;
+          record.createdAt = new Date(mediaData.createdAt).getTime(); 
+        });
       });
-
-      // Bắt đầu tải
-      this.downloadMedia(media);
+      // Bắt đầu tải file
+      await this.downloadMedia(media);
 
       return media;
     } catch (error) {
       console.error('Error handling new media:', error);
-      throw error;
+      throw new Error(`Failed to handle media: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  private async downloadMedia(media: MediaModel) {
+  // Tải media xuống thiết bị
+  private async downloadMedia(media: MediaModel): Promise<void> {
     // Kiểm tra nếu đang tải
-    if (this.downloadQueue.has(media._id)) {
-      return;
+    if (this.downloadQueue.has(media.id)) {
+      return this.downloadQueue.get(media.id)!; // Trả về promise hiện tại
     }
 
     const downloadPromise = (async () => {
       try {
-        await media.startDownload();
+        // Cập nhật trạng thái bắt đầu tải
+        await database.write(async () => {
+          await media.update(record => {
+            record.status = MediaStatus.UPLOADING; // Giả định MediaModel không có startDownload
+          });
+        });
 
-        // Tạo thư mục nếu chưa tồn tại
+        // Tạo thư mục lưu trữ
         const dirPath = `${RNFS.DocumentDirectoryPath}/medias/${media.roomId}`;
         const dirExists = await RNFS.exists(dirPath);
         if (!dirExists) {
           await RNFS.mkdir(dirPath);
         }
 
-        // Tải file
-        const filePath = `${dirPath}/${media._id}_${media.name}`;
+        // Đường dẫn file
+        const fileName = media.originalName || 'unnamed_file'; // Fallback nếu originalName rỗng
+        const filePath = `${dirPath}/${media.id}_${fileName}`;
         const downloadOptions = {
           fromUrl: media.url,
           toFile: filePath,
           progress: (res: { contentLength: number; bytesWritten: number }) => {
             const progress = res.bytesWritten / res.contentLength;
-            media.updateProgress(progress);
+            database.write(async () => {
+              await media.update(record => {
+                record.downloadProgress = progress; // Giả định MediaModel có trường này
+              });
+            });
           },
         };
 
-        await RNFS.downloadFile(downloadOptions).promise;
-        await media.completeDownload(filePath);
+        // Tải file
+        const { promise } = RNFS.downloadFile(downloadOptions);
+        await promise;
 
-      } catch (error: any) {
+        // Cập nhật trạng thái hoàn tất
+        await database.write(async () => {
+          await media.update(record => {
+            record.status = MediaStatus.UPLOADED; // Giả định không có completeDownload
+            record.localPath = filePath; // Giả định MediaModel có trường này
+          });
+        });
+      } catch (error) {
         console.error('Error downloading media:', error);
-        await media.markError(error.message || 'Download failed');
+        await database.write(async () => {
+          await media.update(record => {
+            record.status = MediaStatus.ERROR; // Giả định không có markError
+            record.errorMessage = error instanceof Error ? error.message : 'Download failed'; // Giả định có trường này
+          });
+        });
+        throw error;
       } finally {
-        this.downloadQueue.delete(media._id);
+        this.downloadQueue.delete(media.id);
       }
     })();
 
-    this.downloadQueue.set(media._id, downloadPromise);
+    this.downloadQueue.set(media.id, downloadPromise);
+    return downloadPromise;
   }
 
-  async retryDownload(mediaId: string) {
-    const media = await this.mediaCollection.find(mediaId);
-    if (media) {
-      this.downloadMedia(media);
+  // Thử tải lại media
+  public async retryDownload(mediaId: string): Promise<void> {
+    try {
+      const media = await this.mediaCollection.find(mediaId);
+      if (!media) {
+        throw new Error(`Media with ID ${mediaId} not found`);
+      }
+      await this.downloadMedia(media);
+    } catch (error) {
+      console.error('Error retrying download:', error);
+      throw new Error(`Retry download failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  async getLocalPath(mediaId: string): Promise<string | null> {
-    const media = await this.mediaCollection.find(mediaId);
-    return media?.localPath || null;
+  // Lấy trạng thái media
+  public async getMediaStatus(mediaId: string): Promise<MediaStatus> {
+    try {
+      const media = await this.mediaCollection.find(mediaId);
+      return media.status;
+    } catch (error) {
+      console.warn(`Media ${mediaId} not found, returning PENDING status`);
+      return MediaStatus.PENDING; // Trả về mặc định nếu không tìm thấy
+    }
   }
 
-  async getDownloadProgress(mediaId: string): Promise<number> {
-    const media = await this.mediaCollection.find(mediaId);
-    return media?.downloadProgress || 0;
-  }
-
-  async getMediaStatus(mediaId: string): Promise<'pending' | 'downloading' | 'completed' | 'error'> {
-    const media = await this.mediaCollection.find(mediaId);
-    return media?.status || 'pending';
-  }
-} 
+  //lấy thông tin khi là link
+  public fetchVideoInfo = async (videoId): Promise<LinkMetadata | null> => {
+    try {
+      const response = await axios.get(YOUTUBE_API_URL, {
+        params: {
+          part: 'snippet',
+          id: videoId,
+          key: API_KEY,
+        },
+      });
+  
+      const videoData = response.data.items[0]?.snippet;
+      if (videoData) {
+        return {
+          title: videoData.title,
+          description: videoData.description,
+          thumbnail: videoData.thumbnails.default.url,
+          source: videoData.channelTitle,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching YouTube data:', error);
+      return null;
+    }
+  };
+}

@@ -5,6 +5,7 @@ import { MediaEntity } from './entities/media.entity';
 import { CreateMediaDto } from './dto/create-media.dto';
 import { UpdateMediaDto } from './dto/update-media.dto';
 import { Uuid } from '@/common/types/common.type';
+import { SYSTEM_USER_ID } from '@/constants/app.constant';
 
 @Injectable()
 export class MediaService {
@@ -35,14 +36,34 @@ export class MediaService {
     return await this.mediaRepository.delete(id);
   }
 
-  async createForMessage(messageId: Uuid, mediaData: Partial<MediaEntity>, createdBy: Uuid) {
-    const media = this.mediaRepository.create({
-      ...mediaData,
-      messageId,
-      createdBy,
+  async createForMessage(messageId: Uuid, mediaData: any[], createdBy: Uuid) {
+    const promises = mediaData.map(data => {
+  
+      const media = this.mediaRepository.create({
+        url: data.url,
+        publicId: data.public_id, // Ánh xạ từ public_id sang publicId
+        format: data.format,
+        bytes: data.bytes,
+        width: data.width,
+        height: data.height,
+        duration: data.duration,
+        previewUrl: data.preview_url,
+        originalName: data.originalName,
+        mimeType: data.mimeType,
+        messageId,
+        createdAt: new Date(),
+        createdBy: SYSTEM_USER_ID,
+        updatedAt: new Date(),
+        updatedBy: SYSTEM_USER_ID
+      });
+      
+      return this.mediaRepository.save(media);
     });
-    return await this.mediaRepository.save(media);
+  
+    return await Promise.all(promises);
   }
+  
+  
 
   async findMediaByMessageId(messageId: Uuid) {
     return await this.mediaRepository.find({

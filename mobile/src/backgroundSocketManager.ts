@@ -8,7 +8,6 @@ import RoomRepository from './database/repositories/RoomRepository';
 import { syncWhenAcceptRequest } from './features/relation/relationService';
 import { HandleAcceptReqDataSocket } from './socket/types/relation';
 import { keyMMKVStore, MMKVStore, storage } from './utils/storage';
-import { messageEntity } from './features/message/messageEntity';
 import { syncUserStatus } from './features/user/userSync';
 import UserRepository from './database/repositories/UserRepository';
 
@@ -49,12 +48,12 @@ const backgroundSocketTask = async (taskData) => {
       }
     })
 
-    socket.on('new_message', async (data: messageEntity) => {
+    socket.on('new_message', async (data) => {
       try {        
         if (data.senderId) {
           if ( setMemberMyIds.has(data.senderId)) return
-        }                
-        await syncNewMessage(data, roomRepo, messageRepo, );
+        }            
+      await syncNewMessage(data, roomRepo, messageRepo, );
       } catch (error) {
         console.error('Error syncing new message:', error);
       }

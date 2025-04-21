@@ -1,1 +1,316 @@
-[]
+[
+  {
+    "id": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+    "type": "personal",
+    "roomName": "Bùi Hữu Nhân",
+    "roomAvatar": "https://lh3.googleusercontent.com/a/ACg8ocLB8gJ4EOCfnfzXk4snI22_GpubXhb2hgZic7RPiZO95KP2dw=s96-c",
+    "memberLimit": 99,
+    "members": [
+      {
+        "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "msgVTime": "2025-04-20T09:51:54.783Z",
+        "user": {
+          "id": "4a7652ed-122b-46a3-b301-e3d397e9940c",
+          "username": "Bui Bui",
+          "avatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocLYoMVo2Z_ZvoL_LjNsB7QfqQ34fVou-cgl3dZP8qeNksmlFg=s96-c"
+        }
+      },
+      {
+        "id": "f5a48184-e0e5-4c0c-9f5a-4a0bbbfea503",
+        "msgVTime": "2025-04-20T09:51:53.918Z",
+        "user": {
+          "id": "6ef834aa-4c61-4d74-a680-649be981ce45",
+          "username": "Bùi Hữu Nhân",
+          "avatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocLB8gJ4EOCfnfzXk4snI22_GpubXhb2hgZic7RPiZO95KP2dw=s96-c"
+        }
+      }
+    ],
+    "messages": [
+      {
+        "createdAt": "2025-04-20T09:51:46.833Z",
+        "id": "1c9032d2-6b9f-4634-839e-23619829bd19",
+        "replyMessageId": null,
+        "content": "https://thanhnien.vn/tong-thong-putin-bat-ngo-cong-bo-lenh-ngung-ban-o-ukraine-185250419215546403.htm",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:46:19.354Z",
+        "id": "365c642d-c71c-42a6-ac8b-603eb06b8feb",
+        "replyMessageId": null,
+        "content": "https://youtu.be/2-zSSzg8i3Y?si=ebWxCr8EN6HywvUR",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:45:37.186Z",
+        "id": "9805076e-ade6-47be-ac7e-5af22b594775",
+        "replyMessageId": null,
+        "content": "https://thanhnien.vn/tong-thong-putin-bat-ngo-cong-bo-lenh-ngung-ban-o-ukraine-185250419215546403.htm",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:43:50.662Z",
+        "id": "73c7965f-afed-4d63-a666-6ba90006a2d2",
+        "replyMessageId": null,
+        "content": "https://thanhnien.vn/tong-thong-putin-bat-ngo-cong-bo-lenh-ngung-ban-o-ukraine-185250419215546403.htm",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:35:37.306Z",
+        "id": "64ddacec-b8aa-4e17-997d-13d1559f9686",
+        "replyMessageId": null,
+        "content": "https://thanhnien.vn/tong-thong-putin-bat-ngo-cong-bo-lenh-ngung-ban-o-ukraine-185250419215546403.htm",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:34:44.219Z",
+        "id": "6e1af616-5562-467a-abdb-dd02d59e9417",
+        "replyMessageId": null,
+        "content": "https://thanhnien.vn/tong-thong-putin-bat-ngo-cong-bo-lenh-ngung-ban-o-ukraine-185250419215546403.htm",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:31:39.570Z",
+        "id": "0233df9b-763b-416f-80ec-4e7f6252c99a",
+        "replyMessageId": null,
+        "content": "https://thanhnien.vn/tong-thong-putin-bat-ngo-cong-bo-lenh-ngung-ban-o-ukraine-185250419215546403.htm",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:25:53.913Z",
+        "id": "14f1440b-5d9f-45a2-a0f5-0e5c5c9592e3",
+        "replyMessageId": null,
+        "content": "https://thanhnien.vn/tong-thong-putin-bat-ngo-cong-bo-lenh-ngung-ban-o-ukraine-185250419215546403.htm",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:25:36.754Z",
+        "id": "82b73dbe-5a5d-4c1c-9fd8-7aea1f5b20c6",
+        "replyMessageId": null,
+        "content": "https://thanhnien.vn/tong-thong-putin-bat-ngo-cong-bo-lenh-ngung-ban-o-ukraine-185250419215546403.htm",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:24:32.627Z",
+        "id": "1fec5a06-dabf-497a-a8d8-5767c2cd187e",
+        "replyMessageId": null,
+        "content": "https://youtu.be/XtEeTZr_NIk?si=xBkYL2ntybaryXEa",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:08:06.934Z",
+        "id": "9f6a12f0-5295-4cbd-8a8d-64c39032a71c",
+        "replyMessageId": null,
+        "content": "https://youtu.be/XtEeTZr_NIk?si=xBkYL2ntybaryXEa",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:05:27.804Z",
+        "id": "d56dc9dc-3659-42ab-b339-be86e1f73e2f",
+        "replyMessageId": null,
+        "content": "https://youtu.be/XtEeTZr_NIk?si=xBkYL2ntybaryXEa",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:04:46.307Z",
+        "id": "4fd47a7a-b318-48a7-b655-cb4360d5faaa",
+        "replyMessageId": null,
+        "content": "https://youtu.be/XtEeTZr_NIk?si=xBkYL2ntybaryXEa",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T09:00:33.833Z",
+        "id": "9925c782-041a-45b4-a387-3c50690374fa",
+        "replyMessageId": null,
+        "content": "https://youtu.be/XtEeTZr_NIk?si=xBkYL2ntybaryXEa",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T08:53:12.404Z",
+        "id": "76d4ba88-fa8d-4af3-811c-d4aff5f15484",
+        "replyMessageId": null,
+        "content": "https://youtu.be/XtEeTZr_NIk?si=xBkYL2ntybaryXEa",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T08:52:24.467Z",
+        "id": "2b80929b-55ae-44e6-a923-fa5031b88552",
+        "replyMessageId": null,
+        "content": "https://youtu.be/XtEeTZr_NIk?si=xBkYL2ntybaryXEa",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T08:46:15.052Z",
+        "id": "92b532da-1c27-48e3-8be3-3c5052d21cab",
+        "replyMessageId": null,
+        "content": "https://youtu.be/XtEeTZr_NIk?si=xBkYL2ntybaryXEa",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T08:33:25.791Z",
+        "id": "5da956b1-eb20-4f86-9b59-1c9f57771492",
+        "replyMessageId": null,
+        "content": "https://youtu.be/XtEeTZr_NIk?si=xBkYL2ntybaryXEa",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      },
+      {
+        "createdAt": "2025-04-20T08:33:18.893Z",
+        "id": "88c5439a-85a6-414a-9d2f-1e319b397a17",
+        "replyMessageId": null,
+        "content": "H",
+        "type": "text",
+        "senderId": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+        "roomId": "7a04775b-0ce0-4682-a7e0-b809b5444a81",
+        "sender": {
+          "id": "806e6ecb-64af-4b87-9ca7-b051b604bd5a",
+          "user": {
+            "username": "Bui Bui"
+          }
+        }
+      }
+    ]
+  }
+]

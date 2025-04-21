@@ -104,12 +104,15 @@ export async function syncPendingMessages(
 }
 
 export async function syncNewMessage(
-  newMessage: Partial<_MessageSentRes>,
+  newMessageSocket: Partial<_MessageSentRes>,
   roomRepository: RoomRepository,
   messageRepository: MessageRepository,
 ): Promise<void> {
 
-  if (!newMessage) return;
+  if (!newMessageSocket) return;
+
+  const { media, ...newMessage } = newMessageSocket;
+
   const roomId = newMessage.roomId || `temp-${nanoid}`;
   const messageId = newMessage.id || `temp-${nanoid}`;
   const room = await roomRepository.getRoomById(roomId);
@@ -125,7 +128,6 @@ export async function syncNewMessage(
         messages: [{ ...newMessage, id: messageId }],
       },
     ]);
-  console.log('messagesPrepare', messagesPrepare);
   
     if (messagesPrepare.length === 0) {
       console.warn('Không có tin nhắn để đồng bộ.');

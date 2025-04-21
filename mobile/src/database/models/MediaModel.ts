@@ -1,56 +1,33 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, text, immutableRelation, json } from '@nozbe/watermelondb/decorators';
+import { field, text, immutableRelation } from '@nozbe/watermelondb/decorators';
 import UserModel from './UserModel';
 import RoomModel from './RoomModel';
+import MessageModel from './MessageModel';
+import { MediaStatus } from '../types/media.types';
 
 export default class MediaModel extends Model {
   static table = 'medias';
-
-  @text('_id') _id!: string; 
-  @text('room_id') roomId!: string;
-  @text('msg_id') msgId!: string;
-  @text('name') name!: string; 
-  @text('type') type!: string;
+  @text('_id') _id!: string;
   @text('url') url!: string;
-  @text('local_path') localPath: string | null = null;
-  @text('status') status: 'pending' | 'downloading' | 'completed' | 'error' = 'pending';
-  @text('call_status') callStatus: string | null = null;
-  @text('preview_image') image: string | null = null;
-  @field('duration') duration: number | null = null;
-  @field('size') size: number | null = null;
-  @field('download_progress') downloadProgress: number = 0;
+  @text('public_id') publicId!: string;
+  @text('format') format!: string;
+  @field('bytes') bytes!: number;
+  @field('width') width!: number;
+  @field('height') height!: number;
+  @field('duration') duration!: number;
+  @text('preview_url') previewUrl!: string;
+  @text('original_name') originalName!: string;
+  @text('mime_type') mimeType!: string;
+  @text('type') type?: string;
+  @text('message_id') messageId!: string;
+  @text('room_id') roomId!: string;
+  @text('status') status!: MediaStatus;
   @field('created_at') createdAt!: number;
-  @json('metadata', json => json) metadata: any = {};
+  @field('download_progress') downloadProgress!: number; // Thêm trường tiến trình
+  @text('local_path') localPath!: string; // Thêm đường dẫn file
+  @text('error_message') errorMessage!: string | null; // Thêm thông báo lỗi
 
+  @immutableRelation('messages', 'message_id') message!: MessageModel;
   @immutableRelation('users', 'user_id') user!: UserModel;
   @immutableRelation('chatrooms', 'room_id') room!: RoomModel;
-
-  // Helper methods
-  async startDownload() {
-    await this.update(record => {
-      record.status = 'downloading';
-      record.downloadProgress = 0;
-    });
-  }
-
-  async updateProgress(progress: number) {
-    await this.update(record => {
-      record.downloadProgress = progress;
-    });
-  }
-
-  async completeDownload(localPath: string) {
-    await this.update(record => {
-      record.status = 'completed';
-      record.localPath = localPath;
-      record.downloadProgress = 100;
-    });
-  }
-
-  async markError(error: string) {
-    await this.update(record => {
-      record.status = 'error';
-      record.metadata = { ...record.metadata, error };
-    });
-  }
 }

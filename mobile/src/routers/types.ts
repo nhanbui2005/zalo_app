@@ -1,6 +1,7 @@
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { BaseProfilePagram, ProfilePersonalPagram } from "./main/mainPagramTypes";
 import { Relation } from "~/features/relation/dto/relation.dto.nested";
+import PDFViewerScreen from "~/screens/chat/components/message-types/files/PDFViewerScreen";
 
 export type MainStackParamList = {
   Main: {newFriend: Relation};
@@ -11,6 +12,8 @@ export type MainStackParamList = {
   SenAddFriendScreen: {baseProfile: BaseProfilePagram}
   OptionalFriendScreen: {baseProfile: BaseProfilePagram}
   HandleReqScreen: undefined
+  FullScreenVideo: {videoUrl: string}
+  PDFViewerScreen: {pdfUrl: string}
 };
 export const StackNames = {
   Main: 'Main',
@@ -20,7 +23,9 @@ export const StackNames = {
   ProfilePersonalScreen: 'ProfilePersonalScreen',
   SenAddFriendScreen: 'SenAddFriendScreen',
   HandleReqScreen: 'HandleReqScreen',
-  OptionalFriendScreen: 'OptionalFriendScreen'
+  OptionalFriendScreen: 'OptionalFriendScreen',
+  PDFViewerScreen: 'PDFViewerScreen',
+  FullScreenVideo: 'FullScreenVideo',
 } as const;
 
 export type MainNavProp = NativeStackNavigationProp<MainStackParamList, 'Main'>;

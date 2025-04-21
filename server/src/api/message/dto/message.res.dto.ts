@@ -76,10 +76,6 @@ export class MessageResDto {
   @Expose()
   unReadMsgCount?: number;
 
-  @ObjectField()
-  @Expose()
-  fileInfo?: any;
-
   @ClassField(() => MediaEntity, { each: true })
   @Expose()
   media?: MediaEntity[];
